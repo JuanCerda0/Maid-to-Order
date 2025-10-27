@@ -14,7 +14,7 @@ import androidx.navigation.NavController
 import pkg.maid_to_order.data.Screen
 
 @Composable
-fun TopBar() {
+fun TopBar(navController: NavController) {
 
     val colorBarra = Color(0xFF2196F3)
 
@@ -25,9 +25,7 @@ fun TopBar() {
         modifier = Modifier
 
             .fillMaxWidth()
-
             .background(colorBarra)
-
             .padding(8.dp),
 
         verticalAlignment = Alignment.CenterVertically,
@@ -38,11 +36,8 @@ fun TopBar() {
        TextField(
 
             value = searchText,
-
             onValueChange = { searchText = it },
-
             placeholder = { Text("Buscar...") },
-
             trailingIcon = {
 
                 IconButton(onClick = { searchText = "" }) {
@@ -54,7 +49,6 @@ fun TopBar() {
             modifier = Modifier
 
                 .width(520.dp)
-
                 .height(50.dp),
 
             singleLine = true,
@@ -62,13 +56,9 @@ fun TopBar() {
             colors = TextFieldDefaults.colors(
 
                 focusedContainerColor = Color.White,
-
                 unfocusedContainerColor = Color.White,
-
                 disabledContainerColor = Color.White,
-
                 focusedIndicatorColor = Color.Transparent,
-
                 unfocusedIndicatorColor = Color.Transparent
             )
         )
@@ -78,8 +68,7 @@ fun TopBar() {
             IconButton(onClick = { /* perfil usuario */ }) {
                 Icon(Icons.Default.AccountBox, contentDescription = null) }
 
-            IconButton(onClick = { /* Debo agregar la ruta */ }) {
-                Icon(Icons.Default.ShoppingCart, contentDescription = null) }
+            IconButton(onClick = { (Screen.Cart.route)}) { Icon(Icons.Default.ShoppingCart, contentDescription = null) }
         }
     }
 }
