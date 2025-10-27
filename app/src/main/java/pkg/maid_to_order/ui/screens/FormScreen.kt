@@ -69,7 +69,7 @@ fun FormScreen(
             OutlinedTextField(
                 value = formViewModel.name,
                 onValueChange = { formViewModel.updateName(it) },
-                label = { Text("Nombre (opcional)") },
+                label = { Text("Nombre") },
                 modifier = Modifier.fillMaxWidth(),
                 isError = formViewModel.nameError != null,
                 supportingText = { formViewModel.nameError?.let { Text(it) } }

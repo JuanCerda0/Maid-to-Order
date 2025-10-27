@@ -48,6 +48,10 @@ dependencies {
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.graphics)
+    // DataStore for local preferences
+    implementation("androidx.datastore:datastore-preferences:1.0.0")
+    // Gson for JSON serialization of the cart
+    implementation("com.google.code.gson:gson:2.10.1")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.9.4")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.9.4")
     implementation(libs.androidx.compose.ui.tooling.preview)
