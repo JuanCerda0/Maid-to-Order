@@ -6,9 +6,11 @@ data class Order(
     val id: String = UUID.randomUUID().toString(),
     val items: List<OrderItem>,
     val customerName: String,
-    val customerPhone: String,
-    val customerEmail: String,
-    val deliveryAddress: String,
+    val customerPhone: String = "",
+    val customerEmail: String = "",
+    val deliveryAddress: String = "",
+    val tableNumber: String? = null,
+    val notes: String? = null,
     val total: Double,
     val status: OrderStatus = OrderStatus.PENDING
 )

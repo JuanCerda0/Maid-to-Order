@@ -11,20 +11,15 @@ import pkg.maid_to_order.viewmodel.CartViewModel.CartItem
 class FormViewModel : ViewModel() {
     var name by mutableStateOf("")
         private set
-    var phone by mutableStateOf("")
+    // For in-table orders
+    var tableNumber by mutableStateOf("")
         private set
-    var email by mutableStateOf("")
-        private set
-    var address by mutableStateOf("")
+    var notes by mutableStateOf("")
         private set
 
     var nameError by mutableStateOf<String?>(null)
         private set
-    var phoneError by mutableStateOf<String?>(null)
-        private set
-    var emailError by mutableStateOf<String?>(null)
-        private set
-    var addressError by mutableStateOf<String?>(null)
+    var tableError by mutableStateOf<String?>(null)
         private set
 
     fun updateName(value: String) {
@@ -32,19 +27,13 @@ class FormViewModel : ViewModel() {
         validateName()
     }
 
-    fun updatePhone(value: String) {
-        phone = value
-        validatePhone()
+    fun updateTableNumber(value: String) {
+        tableNumber = value
+        validateTable()
     }
 
-    fun updateEmail(value: String) {
-        email = value
-        validateEmail()
-    }
-
-    fun updateAddress(value: String) {
-        address = value
-        validateAddress()
+    fun updateNotes(value: String) {
+        notes = value
     }
 
     private fun validateName(): Boolean {
@@ -57,58 +46,32 @@ class FormViewModel : ViewModel() {
         }
     }
 
-    private fun validatePhone(): Boolean {
-        return if (phone.isBlank()) {
-            phoneError = "El teléfono es requerido"
+    private fun validateTable(): Boolean {
+        return if (tableNumber.isBlank()) {
+            tableError = "El número de mesa es requerido"
             false
-        } else if (!phone.matches(Regex("^[0-9]{9}$"))) {
-            phoneError = "El teléfono debe tener 9 dígitos"
-            false
-        } else {
-            phoneError = null
-            true
-        }
-    }
-
-    private fun validateEmail(): Boolean {
-        return if (email.isBlank()) {
-            emailError = "El email es requerido"
-            false
-        } else if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-            emailError = "Email inválido"
+        } else if (!tableNumber.matches(Regex("^[0-9]{1,4}$"))) {
+            tableError = "Número de mesa inválido"
             false
         } else {
-            emailError = null
-            true
-        }
-    }
-
-    private fun validateAddress(): Boolean {
-        return if (address.isBlank()) {
-            addressError = "La dirección es requerida"
-            false
-        } else {
-            addressError = null
+            tableError = null
             true
         }
     }
 
     fun validateForm(): Boolean {
         val nameValid = validateName()
-        val phoneValid = validatePhone()
-        val emailValid = validateEmail()
-        val addressValid = validateAddress()
-        return nameValid && phoneValid && emailValid && addressValid
+        val tableValid = validateTable()
+        return nameValid && tableValid
     }
 
     fun createOrder(cartItems: List<CartItem>, total: Double): Order {
         return Order(
             items = cartItems.map { OrderItem(it.dish, it.quantity) },
             customerName = name,
-            customerPhone = phone,
-            customerEmail = email,
-            deliveryAddress = address,
-            total = total
+            total = total,
+            tableNumber = tableNumber.ifBlank { null },
+            notes = notes.ifBlank { null }
         )
     }
 }
