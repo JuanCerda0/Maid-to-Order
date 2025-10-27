@@ -69,39 +69,28 @@ fun FormScreen(
             OutlinedTextField(
                 value = formViewModel.name,
                 onValueChange = { formViewModel.updateName(it) },
-                label = { Text("Nombre Completo") },
+                label = { Text("Nombre (opcional)") },
                 modifier = Modifier.fillMaxWidth(),
                 isError = formViewModel.nameError != null,
                 supportingText = { formViewModel.nameError?.let { Text(it) } }
             )
 
             OutlinedTextField(
-                value = formViewModel.phone,
-                onValueChange = { formViewModel.updatePhone(it) },
-                label = { Text("Teléfono") },
+                value = formViewModel.tableNumber,
+                onValueChange = { formViewModel.updateTableNumber(it) },
+                label = { Text("Número de Mesa") },
                 modifier = Modifier.fillMaxWidth(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-                isError = formViewModel.phoneError != null,
-                supportingText = { formViewModel.phoneError?.let { Text(it) } }
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                isError = formViewModel.tableError != null,
+                supportingText = { formViewModel.tableError?.let { Text(it) } }
             )
 
             OutlinedTextField(
-                value = formViewModel.email,
-                onValueChange = { formViewModel.updateEmail(it) },
-                label = { Text("Email") },
+                value = formViewModel.notes,
+                onValueChange = { formViewModel.updateNotes(it) },
+                label = { Text("Notas / Comentarios (opcional)") },
                 modifier = Modifier.fillMaxWidth(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                isError = formViewModel.emailError != null,
-                supportingText = { formViewModel.emailError?.let { Text(it) } }
-            )
-
-            OutlinedTextField(
-                value = formViewModel.address,
-                onValueChange = { formViewModel.updateAddress(it) },
-                label = { Text("Dirección de Entrega") },
-                modifier = Modifier.fillMaxWidth(),
-                isError = formViewModel.addressError != null,
-                supportingText = { formViewModel.addressError?.let { Text(it) } }
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text)
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -109,7 +98,9 @@ fun FormScreen(
             Button(
                 onClick = {
                     if (formViewModel.validateForm()) {
-                        formViewModel.createOrder(cartViewModel.cartItems.toList(), cartViewModel.total.value)
+                        // Create order for in-table delivery
+                        val order = formViewModel.createOrder(cartViewModel.cartItems.toList(), cartViewModel.total.value)
+                        // TODO: persist/send the order to backend or local storage
                         showDialog = true
                     }
                 },

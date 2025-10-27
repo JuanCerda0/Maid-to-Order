@@ -6,9 +6,8 @@ data class Order(
     val id: String = UUID.randomUUID().toString(),
     val items: List<OrderItem>,
     val customerName: String,
-    val customerPhone: String,
-    val customerEmail: String,
-    val deliveryAddress: String,
+    val tableNumber: String,
+    val notes: String? = null,
     val total: Double,
     val status: OrderStatus = OrderStatus.PENDING
 )
@@ -23,8 +22,7 @@ enum class OrderStatus {
     PENDING,
     CONFIRMED,
     IN_PREPARATION,
-    READY_FOR_DELIVERY,
-    IN_DELIVERY,
-    DELIVERED,
+    READY_TO_SERVE,
+    SERVED,
     CANCELLED
 }

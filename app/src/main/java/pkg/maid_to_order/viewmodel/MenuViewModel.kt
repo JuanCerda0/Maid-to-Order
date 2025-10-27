@@ -14,10 +14,10 @@ class MenuViewModel : ViewModel() {
     init {
         _menuList.addAll(
             listOf(
-                Dish(1, "Katsudon", "Cerdo frito con arroz y huevo", 6.990, R.drawable.katsudon),
-                Dish(2, "Ramen", "Sopa japonesa con fideos y cerdo", 7.490, R.drawable.ramen),
-                Dish(3, "Onigiri", "Bola de arroz rellena con salmón", 3.990, R.drawable.onigiri),
-                Dish(4, "Curry Japonés", "Arroz con curry suave y carne", 8.490, R.drawable.curry)
+                Dish(1, "Katsudon", "Cerdo frito con arroz y huevo", 6.990, R.drawable.ic_launcher_foreground),
+                Dish(2, "Ramen", "Sopa japonesa con fideos y cerdo", 7.490, R.drawable.ic_launcher_foreground),
+                Dish(3, "Onigiri", "Bola de arroz rellena con salmón", 3.990, R.drawable.ic_launcher_foreground),
+                Dish(4, "Curry Japonés", "Arroz con curry suave y carne", 8.490, R.drawable.ic_launcher_foreground)
             )
         )
     }

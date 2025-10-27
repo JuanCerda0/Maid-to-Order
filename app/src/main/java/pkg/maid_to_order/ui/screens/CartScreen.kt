@@ -101,7 +101,7 @@ fun CartScreen(
                     onClick = { navController.navigate(Screen.Form.route) },
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Proceder al Pago")
+                    Text("Realizar Pedido")
                 }
             }
         }
