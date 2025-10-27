@@ -16,7 +16,7 @@ import pkg.maid_to_order.data.Screen
 @Composable
 fun TopBar() {
 
-    val colorBarra = Color(0xFF00BCD4)
+    val colorBarra = Color(0xFF2196F3)
 
     var searchText by remember { mutableStateOf("") }
 
