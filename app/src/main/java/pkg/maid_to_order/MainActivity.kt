@@ -10,38 +10,51 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.compose.animation.*
+import androidx.compose.animation.core.tween
 import pkg.maid_to_order.data.Screen
+import android.app.Application
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.viewmodel.compose.viewModel
+import pkg.maid_to_order.ui.screens.AdminLoginScreen
+import pkg.maid_to_order.ui.screens.AdminScreen
 import pkg.maid_to_order.ui.screens.CartScreen
 import pkg.maid_to_order.ui.screens.DishDetailScreen
 import pkg.maid_to_order.ui.screens.FormScreen
 import pkg.maid_to_order.ui.screens.HomeScreen
-import pkg.maid_to_order.ui.theme.MaidtoOrderTheme
+import pkg.maid_to_order.ui.screens.SettingsScreen
+import pkg.maid_to_order.ui.theme.MaidToOrderTheme
 import pkg.maid_to_order.viewmodel.CartViewModel
 import pkg.maid_to_order.viewmodel.FormViewModel
 import pkg.maid_to_order.viewmodel.MenuViewModel
+import pkg.maid_to_order.viewmodel.SettingsViewModel
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            MaidtoOrderTheme {
-                MainApp()
+            val settingsViewModel: SettingsViewModel = viewModel()
+            val isDarkMode by settingsViewModel.isDarkMode.collectAsState()
+
+            MaidToOrderTheme(darkTheme = isDarkMode) {
+                MainApp(settingsViewModel)
             }
         }
     }
 }
 
-
-
 @Composable
-fun MainApp() {
+fun MainApp(settingsViewModel: SettingsViewModel) {
 
     val navController = rememberNavController()
 
@@ -54,7 +67,31 @@ fun MainApp() {
             startDestination = Screen.Home.route,
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
+                .padding(paddingValues),
+            enterTransition = {
+                fadeIn(animationSpec = tween(300)) + slideInHorizontally(
+                    animationSpec = tween(300),
+                    initialOffsetX = { it }
+                )
+            },
+            exitTransition = {
+                fadeOut(animationSpec = tween(300)) + slideOutHorizontally(
+                    animationSpec = tween(300),
+                    targetOffsetX = { -it }
+                )
+            },
+            popEnterTransition = {
+                fadeIn(animationSpec = tween(300)) + slideInHorizontally(
+                    animationSpec = tween(300),
+                    initialOffsetX = { -it }
+                )
+            },
+            popExitTransition = {
+                fadeOut(animationSpec = tween(300)) + slideOutHorizontally(
+                    animationSpec = tween(300),
+                    targetOffsetX = { it }
+                )
+            }
         ) {
             composable(Screen.Home.route) {
                 HomeScreen(navController, menuViewModel, cartViewModel)
@@ -83,6 +120,24 @@ fun MainApp() {
                     navController = navController,
                     cartViewModel = cartViewModel,
                     formViewModel = formViewModel
+                )
+            }
+
+            composable(Screen.Settings.route) {
+                SettingsScreen(
+                    navController = navController,
+                    settingsViewModel = settingsViewModel
+                )
+            }
+
+            composable(Screen.AdminLogin.route) {
+                AdminLoginScreen(navController = navController)
+            }
+
+            composable(Screen.Admin.route) {
+                AdminScreen(
+                    navController = navController,
+                    menuViewModel = menuViewModel
                 )
             }
         }

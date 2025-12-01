@@ -5,11 +5,11 @@ import java.util.UUID
 data class Order(
     val id: String = UUID.randomUUID().toString(),
     val items: List<OrderItem>,
-    val customerName: String,
+    val customerName: String? = null, // Opcional, solo para pedidos a domicilio
     val customerPhone: String = "",
     val customerEmail: String = "",
     val deliveryAddress: String = "",
-    val tableNumber: String? = null,
+    val tableNumber: String? = null, // Requerido para pedidos en mesa
     val notes: String? = null,
     val total: Double,
     val status: OrderStatus = OrderStatus.PENDING

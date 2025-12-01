@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import pkg.maid_to_order.data.model.Dish
 import pkg.maid_to_order.repository.dataStore
+import pkg.maid_to_order.utils.VibrationUtils
 
 /**
  * CartViewModel ahora persiste el carrito en DataStore (Preferences) como JSON.
@@ -41,7 +42,15 @@ class CartViewModel(application: Application) : AndroidViewModel(application) {
                     dtoList.forEach { dto ->
                         _cartItems.add(
                             CartItem(
-                                Dish(dto.id, dto.name, dto.description, dto.price, dto.imageRes),
+                                Dish(
+                                    id = dto.id,
+                                    name = dto.name,
+                                    description = dto.description,
+                                    price = dto.price,
+                                    category = dto.category ?: "General",
+                                    imageRes = dto.imageRes,
+                                    imageUri = dto.imageUri
+                                ),
                                 dto.quantity
                             )
                         )
@@ -63,6 +72,7 @@ class CartViewModel(application: Application) : AndroidViewModel(application) {
         }
         updateTotal()
         persistCart()
+        VibrationUtils.vibrateShort(getApplication())
     }
 
     fun removeFromCart(dish: Dish) {
@@ -75,6 +85,7 @@ class CartViewModel(application: Application) : AndroidViewModel(application) {
             }
             updateTotal()
             persistCart()
+            VibrationUtils.vibrateShort(getApplication())
         }
     }
 
@@ -82,6 +93,7 @@ class CartViewModel(application: Application) : AndroidViewModel(application) {
         _cartItems.clear()
         updateTotal()
         persistCart()
+        VibrationUtils.vibrateMedium(getApplication())
     }
 
     private fun updateTotal() {
@@ -112,7 +124,9 @@ class CartViewModel(application: Application) : AndroidViewModel(application) {
         val name: String,
         val description: String,
         val price: Double,
-        val imageRes: Int,
+        val category: String? = null,
+        val imageRes: Int? = null,
+        val imageUri: String? = null,
         val quantity: Int
     ) {
         companion object {
@@ -121,7 +135,9 @@ class CartViewModel(application: Application) : AndroidViewModel(application) {
                 name = item.dish.name,
                 description = item.dish.description,
                 price = item.dish.price,
+                category = item.dish.category,
                 imageRes = item.dish.imageRes,
+                imageUri = item.dish.imageUri,
                 quantity = item.quantity
             )
         }

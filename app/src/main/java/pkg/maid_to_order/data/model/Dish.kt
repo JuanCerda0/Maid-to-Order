@@ -5,5 +5,7 @@ data class Dish(
     val name: String,
     val description: String,
     val price: Double,
-    val imageRes: Int // ID del recurso drawable (imagen del plato)
+    val category: String = "General",
+    val imageRes: Int? = null, // ID del recurso drawable (imagen del plato)
+    val imageUri: String? = null // URI de imagen tomada con cámara
 )

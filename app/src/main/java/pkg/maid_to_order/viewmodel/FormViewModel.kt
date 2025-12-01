@@ -9,23 +9,14 @@ import pkg.maid_to_order.data.model.OrderItem
 import pkg.maid_to_order.viewmodel.CartViewModel.CartItem
 
 class FormViewModel : ViewModel() {
-    var name by mutableStateOf("")
-        private set
-    // For in-table orders
+    // Solo número de mesa para pedidos en mesa
     var tableNumber by mutableStateOf("")
         private set
     var notes by mutableStateOf("")
         private set
 
-    var nameError by mutableStateOf<String?>(null)
-        private set
     var tableError by mutableStateOf<String?>(null)
         private set
-
-    fun updateName(value: String) {
-        name = value
-        validateName()
-    }
 
     fun updateTableNumber(value: String) {
         tableNumber = value
@@ -34,16 +25,6 @@ class FormViewModel : ViewModel() {
 
     fun updateNotes(value: String) {
         notes = value
-    }
-
-    private fun validateName(): Boolean {
-        return if (name.isBlank()) {
-            nameError = "El nombre es requerido"
-            false
-        } else {
-            nameError = null
-            true
-        }
     }
 
     private fun validateTable(): Boolean {
@@ -60,17 +41,15 @@ class FormViewModel : ViewModel() {
     }
 
     fun validateForm(): Boolean {
-        val nameValid = validateName()
-        val tableValid = validateTable()
-        return nameValid && tableValid
+        return validateTable()
     }
 
     fun createOrder(cartItems: List<CartItem>, total: Double): Order {
         return Order(
             items = cartItems.map { OrderItem(it.dish, it.quantity) },
-            customerName = name,
+            customerName = null, // No se requiere nombre, solo mesa
             total = total,
-            tableNumber = tableNumber.ifBlank { null },
+            tableNumber = tableNumber,
             notes = notes.ifBlank { null }
         )
     }
