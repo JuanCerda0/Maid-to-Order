@@ -45,11 +45,10 @@ interface MaidToOrderApi {
     
     @POST("orders")
     suspend fun createOrder(@Body order: OrderCreateDto): Response<OrderDto>
-    
+
     @PUT("orders/{id}/status")
     suspend fun updateOrderStatus(
         @Path("id") id: Long,
         @Body status: Map<String, String>
     ): Response<OrderDto>
 }
-

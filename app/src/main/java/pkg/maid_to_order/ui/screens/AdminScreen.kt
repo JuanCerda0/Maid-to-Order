@@ -47,6 +47,19 @@ fun AdminScreen(
 ) {
     var showAddDialog by remember { mutableStateOf(false) }
     var editingDish by remember { mutableStateOf<Dish?>(null) }
+    val snackbarHostState = remember { SnackbarHostState() }
+    val adminUiState by menuViewModel.adminUiState.collectAsState()
+
+    LaunchedEffect(adminUiState.eventId) {
+        if (adminUiState.eventId != 0L) {
+            adminUiState.message?.let { snackbarHostState.showSnackbar(it) }
+            if (adminUiState.isSuccess) {
+                showAddDialog = false
+                editingDish = null
+            }
+            menuViewModel.consumeAdminMessage()
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -81,7 +94,8 @@ fun AdminScreen(
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Agregar platillo")
             }
-        }
+        },
+        snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { innerPadding ->
         Box(modifier = Modifier.fillMaxSize()) {
             // Fondo con opacidad del 50%
@@ -130,7 +144,7 @@ fun AdminScreen(
                     AdminDishCard(
                         dish = dish,
                         onEdit = { editingDish = dish },
-                        onDelete = { menuViewModel.deleteDish(dish.id) }
+                        onDelete = { menuViewModel.deleteDishRemote(dish.id) }
                     )
                 }
             }
@@ -139,18 +153,13 @@ fun AdminScreen(
         if (showAddDialog || editingDish != null) {
             DishFormDialog(
                 dish = editingDish,
+                isProcessing = adminUiState.isProcessing,
                 onDismiss = {
                     showAddDialog = false
                     editingDish = null
                 },
                 onSave = { dish ->
-                    if (editingDish != null) {
-                        menuViewModel.updateDish(dish)
-                    } else {
-                        menuViewModel.addDish(dish)
-                    }
-                    showAddDialog = false
-                    editingDish = null
+                    menuViewModel.submitDish(dish, editingDish != null)
                 }
             )
             }
@@ -255,6 +264,7 @@ fun AdminDishCard(
 @Composable
 fun DishFormDialog(
     dish: Dish?,
+    isProcessing: Boolean,
     onDismiss: () -> Unit,
     onSave: (Dish) -> Unit
 ) {
@@ -266,6 +276,8 @@ fun DishFormDialog(
     var imageUri by remember { mutableStateOf<Uri?>(dish?.imageUri?.let { Uri.parse(it) }) }
     var imageRes by remember { mutableStateOf<Int?>(dish?.imageRes) }
     var photoFile by remember { mutableStateOf<File?>(null) }
+    var nameError by remember { mutableStateOf<String?>(null) }
+    var priceError by remember { mutableStateOf<String?>(null) }
 
     val categories = listOf("General", "Platos Principales", "Sopas", "Aperitivos", "Bebidas", "Postres")
 
@@ -326,6 +338,10 @@ fun DishFormDialog(
                     .padding(24.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
+                if (isProcessing) {
+                    LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                }
+
                 Text(
                     text = if (dish != null) "Editar Platillo" else "Nuevo Platillo",
                     fontSize = 24.sp,
@@ -334,10 +350,15 @@ fun DishFormDialog(
 
                 OutlinedTextField(
                     value = name,
-                    onValueChange = { name = it },
+                    onValueChange = {
+                        name = it
+                        if (it.isNotBlank()) nameError = null
+                    },
                     label = { Text("Nombre") },
                     modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
+                    singleLine = true,
+                    isError = nameError != null,
+                    supportingText = { nameError?.let { Text(it) } }
                 )
 
                 OutlinedTextField(
@@ -350,10 +371,15 @@ fun DishFormDialog(
 
                 OutlinedTextField(
                     value = price,
-                    onValueChange = { price = it },
+                    onValueChange = {
+                        price = it
+                        priceError = null
+                    },
                     label = { Text("Precio") },
                     modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
+                    singleLine = true,
+                    isError = priceError != null,
+                    supportingText = { priceError?.let { Text(it) } }
                 )
 
                 // Selector de categoría
@@ -471,32 +497,51 @@ fun DishFormDialog(
                 ) {
                     OutlinedButton(
                         onClick = onDismiss,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
+                        enabled = !isProcessing
                     ) {
                         Text("Cancelar")
                     }
                     Button(
                         onClick = {
-                            val priceValue = price.toDoubleOrNull() ?: 0.0
-                            val newDish = Dish(
-                                id = dish?.id ?: 0,
-                                name = name,
-                                description = description,
-                                price = priceValue,
-                                category = category,
-                                imageRes = imageRes,
-                                imageUri = imageUri?.toString()
-                            )
-                            onSave(newDish)
+                            val priceValue = price.toDoubleOrNull()
+                            var isValid = true
+                            if (name.isBlank()) {
+                                nameError = "El nombre es obligatorio"
+                                isValid = false
+                            }
+                            if (priceValue == null || priceValue <= 0.0) {
+                                priceError = "Ingresa un precio válido"
+                                isValid = false
+                            }
+                            if (isValid && priceValue != null) {
+                                val newDish = Dish(
+                                    id = dish?.id ?: 0,
+                                    name = name.trim(),
+                                    description = description.trim(),
+                                    price = priceValue,
+                                    category = category,
+                                    imageRes = imageRes,
+                                    imageUri = imageUri?.toString()
+                                )
+                                onSave(newDish)
+                            }
                         },
                         modifier = Modifier.weight(1f),
-                        enabled = name.isNotBlank() && price.toDoubleOrNull() != null
+                        enabled = !isProcessing
                     ) {
-                        Text(if (dish != null) "Guardar" else "Agregar")
+                        if (isProcessing) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(18.dp),
+                                strokeWidth = 2.dp,
+                                color = MaterialTheme.colorScheme.onPrimary
+                            )
+                        } else {
+                            Text(if (dish != null) "Guardar" else "Agregar")
+                        }
                     }
                 }
             }
         }
     }
 }
-

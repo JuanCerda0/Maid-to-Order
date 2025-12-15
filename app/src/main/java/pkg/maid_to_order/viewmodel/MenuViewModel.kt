@@ -5,9 +5,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import pkg.maid_to_order.data.model.Dish
 import pkg.maid_to_order.network.api.RetrofitClient
+import pkg.maid_to_order.network.dto.DishCreateDto
 import pkg.maid_to_order.network.mapper.DishMapper
 import pkg.maid_to_order.network.mapper.SpecialDishMapper
 
@@ -21,6 +24,16 @@ class MenuViewModel : ViewModel() {
     
     val isLoading = mutableStateOf(false)
     val errorMessage = mutableStateOf<String?>(null)
+
+    data class AdminUiState(
+        val isProcessing: Boolean = false,
+        val message: String? = null,
+        val isSuccess: Boolean = false,
+        val eventId: Long = 0L
+    )
+
+    private val _adminUiState = MutableStateFlow(AdminUiState())
+    val adminUiState: StateFlow<AdminUiState> = _adminUiState
 
     init {
         loadMenuFromApi()
@@ -52,7 +65,8 @@ class MenuViewModel : ViewModel() {
     }
     
     private fun loadLocalMenu() {
-        _menuList.addAll(
+        if (_menuList.isEmpty()) {
+            _menuList.addAll(
             listOf(
                 Dish(1, "Katsudon", "Cerdo frito con arroz y huevo", 6700.0, "Platos Principales", null, null),
                 Dish(2, "Ramen", "Sopa japonesa con fideos y cerdo", 7400.0, "Sopas", null, null),
@@ -60,6 +74,7 @@ class MenuViewModel : ViewModel() {
                 Dish(4, "Curry Japonés", "Arroz con curry suave y carne", 8500.0, "Platos Principales", null, null)
             )
         )
+        }
     }
     
     private fun loadSpecialDishes() {
@@ -108,19 +123,87 @@ class MenuViewModel : ViewModel() {
         }
     }
     
-    fun addDish(dish: Dish) {
-        val newId = (_menuList.maxOfOrNull { it.id } ?: 0) + 1
-        _menuList.add(dish.copy(id = newId))
-    }
-    
-    fun updateDish(dish: Dish) {
-        val index = _menuList.indexOfFirst { it.id == dish.id }
-        if (index != -1) {
-            _menuList[index] = dish
+    fun submitDish(dish: Dish, isEdit: Boolean) {
+        viewModelScope.launch {
+            _adminUiState.value = AdminUiState(isProcessing = true)
+            try {
+                val dto = dish.toCreateDto()
+                val response = if (isEdit) {
+                    RetrofitClient.api.updateDish(dish.id.toLong(), dto)
+                } else {
+                    RetrofitClient.api.createDish(dto)
+                }
+                if (response.isSuccessful) {
+                    refreshMenu()
+                    _adminUiState.value = AdminUiState(
+                        isProcessing = false,
+                        message = if (isEdit) "Platillo actualizado correctamente" else "Platillo creado correctamente",
+                        isSuccess = true,
+                        eventId = System.currentTimeMillis()
+                    )
+                } else {
+                    _adminUiState.value = AdminUiState(
+                        isProcessing = false,
+                        message = "Error del servidor (${response.code()})",
+                        isSuccess = false,
+                        eventId = System.currentTimeMillis()
+                    )
+                }
+            } catch (e: Exception) {
+                _adminUiState.value = AdminUiState(
+                    isProcessing = false,
+                    message = "Error al guardar: ${e.message}",
+                    isSuccess = false,
+                    eventId = System.currentTimeMillis()
+                )
+            }
         }
     }
-    
-    fun deleteDish(dishId: Int) {
-        _menuList.removeAll { it.id == dishId }
+
+    fun deleteDishRemote(dishId: Int) {
+        viewModelScope.launch {
+            _adminUiState.value = AdminUiState(isProcessing = true)
+            try {
+                val response = RetrofitClient.api.deleteDish(dishId.toLong())
+                if (response.isSuccessful) {
+                    refreshMenu()
+                    _adminUiState.value = AdminUiState(
+                        isProcessing = false,
+                        message = "Platillo eliminado",
+                        isSuccess = true,
+                        eventId = System.currentTimeMillis()
+                    )
+                } else {
+                    _adminUiState.value = AdminUiState(
+                        isProcessing = false,
+                        message = "No se pudo eliminar (${response.code()})",
+                        isSuccess = false,
+                        eventId = System.currentTimeMillis()
+                    )
+                }
+            } catch (e: Exception) {
+                _adminUiState.value = AdminUiState(
+                    isProcessing = false,
+                    message = "Error al eliminar: ${e.message}",
+                    isSuccess = false,
+                    eventId = System.currentTimeMillis()
+                )
+            }
+        }
+    }
+
+    fun consumeAdminMessage() {
+        _adminUiState.value = _adminUiState.value.copy(message = null, eventId = 0L, isSuccess = false)
+    }
+
+    private fun Dish.toCreateDto(): DishCreateDto {
+        return DishCreateDto(
+            name = name,
+            description = description,
+            price = price,
+            category = category,
+            imageUrl = imageUri,
+            available = true
+        )
     }
 }

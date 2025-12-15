@@ -6,21 +6,17 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
 
-object RetrofitClient {
-    // Cambiar esta URL según donde esté corriendo el backend
-    // Para emulador Android: http://10.0.2.2:8080/api
-    // Para dispositivo físico: http://[IP_LOCAL]:8080/api
-    private const val BASE_URL = "http://10.0.2.2:8080/api/"
+object WeatherClient {
+    private const val BASE_URL = "https://api.open-meteo.com/"
 
     private val loggingInterceptor = HttpLoggingInterceptor().apply {
-        level = HttpLoggingInterceptor.Level.BODY
+        level = HttpLoggingInterceptor.Level.BASIC
     }
 
     private val okHttpClient = OkHttpClient.Builder()
         .addInterceptor(loggingInterceptor)
         .connectTimeout(30, TimeUnit.SECONDS)
         .readTimeout(30, TimeUnit.SECONDS)
-        .writeTimeout(30, TimeUnit.SECONDS)
         .build()
 
     private val retrofit = Retrofit.Builder()
@@ -29,5 +25,5 @@ object RetrofitClient {
         .addConverterFactory(GsonConverterFactory.create())
         .build()
 
-    val api: MaidToOrderApi = retrofit.create(MaidToOrderApi::class.java)
+    val api: WeatherApi = retrofit.create(WeatherApi::class.java)
 }

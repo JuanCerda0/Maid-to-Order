@@ -19,6 +19,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
@@ -33,8 +34,10 @@ import pkg.maid_to_order.R
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SearchBar
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -50,6 +53,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
@@ -57,6 +61,8 @@ import pkg.maid_to_order.data.Screen
 import pkg.maid_to_order.ui.screens.SpecialDishCard
 import pkg.maid_to_order.viewmodel.CartViewModel
 import pkg.maid_to_order.viewmodel.MenuViewModel
+import pkg.maid_to_order.viewmodel.WeatherUiState
+import pkg.maid_to_order.viewmodel.WeatherViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -68,6 +74,8 @@ fun HomeScreen(
     var searchQuery by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf<String?>("Todos") }
     var isSearchActive by remember { mutableStateOf(false) }
+    val weatherViewModel: WeatherViewModel = viewModel()
+    val weatherState by weatherViewModel.uiState.collectAsState()
 
     val categories = menuViewModel.getCategories()
     val filteredDishes = if (isSearchActive && searchQuery.isNotEmpty()) {
@@ -186,7 +194,15 @@ fun HomeScreen(
                     }
                 }
             }
-
+            
+            WeatherInfoCard(
+                state = weatherState,
+                onRetry = { weatherViewModel.refreshWeather() },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp)
+            )
+            
             // Filtros por categoría
             LazyRow(
                 modifier = Modifier
@@ -298,6 +314,72 @@ fun HomeScreen(
                     }
                 }
             }
+            }
+        }
+    }
+}
+
+@Composable
+fun WeatherInfoCard(
+    state: WeatherUiState,
+    onRetry: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier.padding(vertical = 8.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        when (state) {
+            WeatherUiState.Loading -> {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                    Text(text = "Obteniendo clima...", fontWeight = FontWeight.Medium)
+                }
+            }
+            is WeatherUiState.Success -> {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                ) {
+                    Text(
+                        text = "Clima actual",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 18.sp
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(text = "Temperatura: ${String.format("%.1f", state.temperature)}°C")
+                    Text(text = "Viento: ${String.format("%.1f", state.windSpeed)} km/h")
+                    Text(
+                        text = "Actualizado: ${state.time}",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    )
+                }
+            }
+            is WeatherUiState.Error -> {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = "No pudimos obtener el clima",
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                    Text(text = state.message)
+                    TextButton(onClick = onRetry) {
+                        Text("Reintentar")
+                    }
+                }
             }
         }
     }
