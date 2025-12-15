@@ -7,6 +7,7 @@
 | `RetrofitClient.kt` | `app/src/main/java/pkg/maid_to_order/network/api` | Configuración común para `http://10.0.2.2:8080/api/` (gateway), interceptor OkHttp y timeouts. |
 | `MaidToOrderApi.kt` | misma carpeta | Declaraciones `@GET`, `@POST`, `@PUT`, `@DELETE` para `/dishes`, `/orders`, `/special-dishes`. |
 | `WeatherClient.kt` / `WeatherApi.kt` | `network/api` | Segundo Retrofit apuntando a `https://api.open-meteo.com/v1/forecast`. |
+| `AndroidManifest.xml` + `res/xml/network_security_config.xml` | `app/src/main/...` | `usesCleartextTraffic=true` + dominios permitidos (`10.0.2.2`, `localhost`) que desbloquean los POST/PUT/DELETE del panel Admin. |
 | `MenuViewModel.kt`, `FormViewModel.kt`, `WeatherViewModel.kt` | `viewmodel` | Ejemplos de uso real: `RetrofitClient.api.getDishes()`, `createOrder`, `WeatherClient.api.getCurrentWeather()`, manejo de estados/error. |
 
 Explica también la arquitectura de backend: la app solo conoce el **gateway** (`8080`) y éste enruta a los microservicios de platos (8081), pedidos (8082) y especiales (8083). Eso demuestra la integración con microservicios reales.
@@ -50,6 +51,7 @@ Explica también la arquitectura de backend: la app solo conoce el **gateway** (
 ## 5. Checklist antes de la demo
 - [ ] Servicios Spring Boot levantados: gateway 8080 + dishes 8081 + orders 8082 + specials 8083.
 - [ ] App configurada con `BASE_URL = http://10.0.2.2:8080/api/`.
+- [ ] Manifest con `usesCleartextTraffic=true` y `network_security_config.xml` en `res/xml` (solo hace falta verificarlo una vez, pero menciónalo si preguntan por seguridad).
 - [ ] Logcat filtrado por `OkHttp` o Network Inspector abierto.
 - [ ] Mostrar los archivos clave de Retrofit y ViewModels.
 - [ ] Ejecutar acciones en la app (listar, editar, crear pedido, refrescar clima) mientras se observan las peticiones.

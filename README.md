@@ -61,7 +61,7 @@ Los servicios corren en los puertos 8080 (gateway), 8081 (platos), 8082 (pedidos
 
 ### App Android
 1. Abre el módulo `app/` en Android Studio Giraffe o superior.
-2. Asegúrate de que el backend gateway esté activo y apunta a `http://10.0.2.2:8080/api/` en `RetrofitClient.kt` (para emulador). Para un dispositivo físico, reemplaza por la IP local.
+2. Asegúrate de que el backend gateway esté activo y apunta a `http://10.0.2.2:8080/api/` en `RetrofitClient.kt` (para emulador). Para un dispositivo físico, reemplaza por la IP local. El `AndroidManifest` habilita `usesCleartextTraffic` y referencia `res/xml/network_security_config.xml`, permitiendo HTTP plano contra `10.0.2.2/localhost` (necesario para que el panel Admin pueda crear/editar/borrar platos).
 3. Sincroniza el proyecto y ejecuta en emulador o dispositivo.
 4. Para obtener el APK firmado basta con `./gradlew :app:assembleRelease`. El archivo queda en `app/build/outputs/apk/release/app-release.apk` firmado con `maid-to-order-keystore.jks`.
 
