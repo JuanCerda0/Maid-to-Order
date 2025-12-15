@@ -14,7 +14,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import pkg.maid_to_order.data.model.Dish
 import pkg.maid_to_order.repository.dataStore
-import pkg.maid_to_order.utils.VibrationUtils
 
 /**
  * CartViewModel ahora persiste el carrito en DataStore (Preferences) como JSON.
@@ -72,7 +71,6 @@ class CartViewModel(application: Application) : AndroidViewModel(application) {
         }
         updateTotal()
         persistCart()
-        VibrationUtils.vibrateShort(getApplication())
     }
 
     fun removeFromCart(dish: Dish) {
@@ -85,7 +83,6 @@ class CartViewModel(application: Application) : AndroidViewModel(application) {
             }
             updateTotal()
             persistCart()
-            VibrationUtils.vibrateShort(getApplication())
         }
     }
 
@@ -93,7 +90,6 @@ class CartViewModel(application: Application) : AndroidViewModel(application) {
         _cartItems.clear()
         updateTotal()
         persistCart()
-        VibrationUtils.vibrateMedium(getApplication())
     }
 
     private fun updateTotal() {

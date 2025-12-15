@@ -1,3 +1,6 @@
+import java.util.Properties
+import java.io.FileInputStream
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -20,6 +23,32 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+        create("release") {
+            val keystorePropertiesFile = file("keystore.properties")
+            if (keystorePropertiesFile.exists()) {
+                val keystoreProperties = Properties()
+                keystoreProperties.load(FileInputStream(keystorePropertiesFile))
+                val keystoreFileName = keystoreProperties.getProperty("storeFile") ?: "maid-to-order-keystore.jks"
+                // Resolver la ruta relativa al directorio del módulo app
+                val keystoreFile = file(keystoreFileName)
+                println("Looking for keystore at: ${keystoreFile.absolutePath}")
+                println("Keystore exists: ${keystoreFile.exists()}")
+                if (keystoreFile.exists()) {
+                    storeFile = keystoreFile
+                    storePassword = keystoreProperties.getProperty("storePassword") ?: ""
+                    keyAlias = keystoreProperties.getProperty("keyAlias") ?: "maid-to-order-key"
+                    keyPassword = keystoreProperties.getProperty("keyPassword") ?: ""
+                    println("Signing config loaded successfully")
+                } else {
+                    throw GradleException("Keystore file not found: ${keystoreFile.absolutePath}. Please check that maid-to-order-keystore.jks exists in the app directory.")
+                }
+            } else {
+                println("keystore.properties not found, skipping signing config")
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
@@ -27,6 +56,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            signingConfig = signingConfigs.getByName("release")
         }
     }
     compileOptions {
@@ -75,6 +105,15 @@ dependencies {
     // Activity Result API
     implementation("androidx.activity:activity-compose:1.9.0")
     
+    // Retrofit for API calls
+    implementation("com.squareup.retrofit2:retrofit:2.9.0")
+    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
+    
+    // Coroutines
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
+    
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -82,9 +121,4 @@ dependencies {
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
-
-    //RetroFit
-    implementation("com.squareup.retrofit2:retrofit:2.9.0")
-    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
-    implementation("com.squareup.okhttp3:logging-interceptor:4.11.0")
 }

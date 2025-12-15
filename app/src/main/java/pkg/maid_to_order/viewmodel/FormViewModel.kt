@@ -4,8 +4,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.launch
 import pkg.maid_to_order.data.model.Order
 import pkg.maid_to_order.data.model.OrderItem
+import pkg.maid_to_order.network.api.RetrofitClient
+import pkg.maid_to_order.network.dto.OrderCreateDto
+import pkg.maid_to_order.network.dto.OrderItemCreateDto
 import pkg.maid_to_order.viewmodel.CartViewModel.CartItem
 
 class FormViewModel : ViewModel() {
@@ -17,6 +22,10 @@ class FormViewModel : ViewModel() {
 
     var tableError by mutableStateOf<String?>(null)
         private set
+    
+    val isSubmitting = mutableStateOf(false)
+    val submitError = mutableStateOf<String?>(null)
+    val submitSuccess = mutableStateOf(false)
 
     fun updateTableNumber(value: String) {
         tableNumber = value
@@ -52,5 +61,38 @@ class FormViewModel : ViewModel() {
             tableNumber = tableNumber,
             notes = notes.ifBlank { null }
         )
+    }
+    
+    fun submitOrderToApi(cartItems: List<CartItem>) {
+        viewModelScope.launch {
+            isSubmitting.value = true
+            submitError.value = null
+            submitSuccess.value = false
+            
+            try {
+                val orderDto = OrderCreateDto(
+                    items = cartItems.map { 
+                        OrderItemCreateDto(
+                            dishId = it.dish.id.toLong(),
+                            quantity = it.quantity
+                        )
+                    },
+                    customerPhone = "0000000000", // Placeholder
+                    tableNumber = tableNumber,
+                    notes = notes.ifBlank { null }
+                )
+                
+                val response = RetrofitClient.api.createOrder(orderDto)
+                if (response.isSuccessful) {
+                    submitSuccess.value = true
+                } else {
+                    submitError.value = "Error al crear el pedido"
+                }
+            } catch (e: Exception) {
+                submitError.value = "Error de conexión: ${e.message}"
+            } finally {
+                isSubmitting.value = false
+            }
+        }
     }
 }

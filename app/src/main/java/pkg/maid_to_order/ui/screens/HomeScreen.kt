@@ -1,49 +1,62 @@
 package pkg.maid_to_order.ui.screens
 
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import pkg.maid_to_order.R
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SearchBar
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import androidx.navigation.NavController
-import pkg.maid_to_order.R
 import pkg.maid_to_order.data.Screen
+import pkg.maid_to_order.ui.screens.SpecialDishCard
 import pkg.maid_to_order.viewmodel.CartViewModel
 import pkg.maid_to_order.viewmodel.MenuViewModel
-
-// Componentes personalizados que debes tener en tu proyecto
-import pkg.maid_to_order.ui.components.SearchResultRow
-import pkg.maid_to_order.ui.components.DishCardAnimated
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -56,142 +69,338 @@ fun HomeScreen(
     var selectedCategory by remember { mutableStateOf<String?>("Todos") }
     var isSearchActive by remember { mutableStateOf(false) }
 
-    val categories = remember { menuViewModel.getCategories() }
-
-    // Filtrado optimizado
-    val filteredDishes = remember(searchQuery, selectedCategory) {
-        if (searchQuery.isNotEmpty()) menuViewModel.searchDishes(searchQuery)
-        else menuViewModel.getMenuByCategory(selectedCategory)
+    val categories = menuViewModel.getCategories()
+    val filteredDishes = if (isSearchActive && searchQuery.isNotEmpty()) {
+        menuViewModel.searchDishes(searchQuery)
+    } else {
+        menuViewModel.getMenuByCategory(selectedCategory)
     }
+    val specialDishes = menuViewModel.specialDishes
+    
+    // Animaciones
+    val infiniteTransition = rememberInfiniteTransition(label = "infinite")
+    val shimmerAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.3f,
+        targetValue = 0.7f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1000, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "shimmer"
+    )
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
                         Image(
                             painter = painterResource(id = R.drawable.logo_maid),
-                            contentDescription = "Logo Maid to Order",
-                            modifier = Modifier.size(48.dp)
+                            contentDescription = "Logo",
+                            modifier = Modifier.size(80.dp)
                         )
-                        Spacer(Modifier.width(12.dp))
-                        Text(
-                            text = "Maid to Order",
-                            style = MaterialTheme.typography.titleLarge
-                        )
+                        Text("Maid to Order - Menú", fontSize = 20.sp, fontWeight = FontWeight.Bold)
                     }
                 },
                 actions = {
                     IconButton(onClick = { navController.navigate(Screen.Cart.route) }) {
                         Icon(
                             imageVector = Icons.Default.ShoppingCart,
-                            contentDescription = "Ir al carrito",
-                            tint = MaterialTheme.colorScheme.onSurface
+                            contentDescription = "Ver carrito"
                         )
                     }
                     IconButton(onClick = { navController.navigate(Screen.Settings.route) }) {
                         Icon(
                             imageVector = Icons.Default.Settings,
-                            contentDescription = "Ajustes",
-                            tint = MaterialTheme.colorScheme.onSurface
+                            contentDescription = "Ajustes"
                         )
                     }
                     IconButton(onClick = { navController.navigate(Screen.AdminLogin.route) }) {
                         Icon(
                             imageVector = Icons.Default.Lock,
-                            contentDescription = "Panel Admin",
-                            tint = MaterialTheme.colorScheme.onSurface
+                            contentDescription = "Admin"
                         )
                     }
                 }
             )
         }
     ) { innerPadding ->
-
         Box(modifier = Modifier.fillMaxSize()) {
-
-            // Fondo optimizado
+            // Fondo con opacidad del 50%
             Image(
                 painter = painterResource(id = R.drawable.fondo),
                 contentDescription = null,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop,
-                alpha = 0.35f
+                modifier = Modifier
+                    .fillMaxSize()
+                    .graphicsLayer(alpha = 0.5f),
+                contentScale = ContentScale.Crop
             )
-
             Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding)
-                    .padding(16.dp)
             ) {
-
-                // SearchBar mejorado
-                SearchBar(
-                    query = searchQuery,
-                    onQueryChange = {
-                        searchQuery = it
-                        isSearchActive = it.isNotEmpty()
-                    },
-                    onSearch = { isSearchActive = true },
-                    active = isSearchActive,
-                    onActiveChange = { isSearchActive = it },
-                    placeholder = { Text("Buscar platillos...") },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    if (searchQuery.isNotEmpty()) {
-                        val searchResults = menuViewModel.searchDishes(searchQuery)
-                        LazyColumn {
-                            items(searchResults) { dish ->
-                                SearchResultRow(
-                                    dish = dish,
-                                    onClick = {
+            // Barra de búsqueda
+            SearchBar(
+                query = searchQuery,
+                onQueryChange = { 
+                    searchQuery = it
+                    isSearchActive = it.isNotEmpty()
+                },
+                onSearch = { isSearchActive = true },
+                active = isSearchActive,
+                onActiveChange = { isSearchActive = it },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                placeholder = { Text("Buscar platillos...") }
+            ) {
+                // Resultados de búsqueda en el dropdown
+                if (searchQuery.isNotEmpty()) {
+                    val searchResults = menuViewModel.searchDishes(searchQuery)
+                    LazyColumn {
+                        items(searchResults) { dish ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
                                         navController.navigate(Screen.DishDetail(dish.id).route)
                                         isSearchActive = false
                                     }
+                                    .padding(16.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = dish.name,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                Text(
+                                    text = "$${String.format("%.0f", dish.price)}",
+                                    color = MaterialTheme.colorScheme.primary
                                 )
                             }
                         }
                     }
                 }
+            }
 
-                Spacer(Modifier.height(12.dp))
-
-                // Categorías con animación
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    items(categories) { category ->
-                        FilterChip(
-                            selected = selectedCategory == category,
-                            onClick = {
-                                selectedCategory = category
-                                searchQuery = ""
-                                isSearchActive = false
-                            },
-                            label = { Text(category) },
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = MaterialTheme.colorScheme.primary,
-                                selectedLabelColor = MaterialTheme.colorScheme.onPrimary
-                            )
+            // Filtros por categoría
+            LazyRow(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(categories) { category ->
+                    FilterChip(
+                        selected = selectedCategory == category,
+                        onClick = {
+                            selectedCategory = category
+                            isSearchActive = false
+                            searchQuery = ""
+                        },
+                        label = { Text(category) },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = MaterialTheme.colorScheme.primary,
+                            selectedLabelColor = MaterialTheme.colorScheme.onPrimary
                         )
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            // Sección de platos especiales
+            if (specialDishes.isNotEmpty()) {
+                AnimatedVisibility(
+                    visible = specialDishes.isNotEmpty(),
+                    enter = fadeIn() + slideInVertically(),
+                    exit = fadeOut() + slideOutVertically()
+                ) {
+                    Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
+                        Text(
+                            text = "🌟 Especialidades",
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
+                        LazyRow(
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            items(specialDishes) { dish ->
+                                AnimatedVisibility(
+                                    visible = true,
+                                    enter = fadeIn() + slideInHorizontally(),
+                                    exit = fadeOut() + slideOutHorizontally()
+                                ) {
+                                    SpecialDishCard(
+                                        dish = dish,
+                                        onClick = {
+                                            navController.navigate(Screen.DishDetail(dish.id).route)
+                                        }
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
+                Spacer(modifier = Modifier.height(16.dp))
+            }
 
-                Spacer(Modifier.height(8.dp))
-
-                // Listado
+            // Lista de platillos
+            if (filteredDishes.isEmpty()) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(32.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        text = if (isSearchActive) "No se encontraron platillos" else "No hay platillos en esta categoría",
+                        fontSize = 18.sp,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    )
+                }
+            } else {
                 LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 12.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    items(filteredDishes) { dish ->
-                        DishCardAnimated(
-                            dish = dish,
-                            onClick = {
-                                navController.navigate(Screen.DishDetail(dish.id).route)
-                            }
-                        )
+                    items(
+                        items = filteredDishes,
+                        key = { it.id }
+                    ) { dish ->
+                        AnimatedVisibility(
+                            visible = true,
+                            enter = fadeIn() + slideInVertically(
+                                initialOffsetY = { it / 2 },
+                                animationSpec = spring(
+                                    dampingRatio = Spring.DampingRatioMediumBouncy,
+                                    stiffness = Spring.StiffnessLow
+                                )
+                            ),
+                            exit = fadeOut() + slideOutVertically()
+                        ) {
+                            DishCard(
+                                dish = dish,
+                                onClick = {
+                                    navController.navigate(Screen.DishDetail(dish.id).route)
+                                }
+                            )
+                        }
                     }
                 }
+            }
+            }
+        }
+    }
+}
+
+@Composable
+fun DishCard(
+    dish: pkg.maid_to_order.data.model.Dish,
+    onClick: () -> Unit
+) {
+    var isPressed by remember { mutableStateOf(false) }
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.95f else 1f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
+        ),
+        label = "scale"
+    )
+    
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+            }
+            .clickable { 
+                isPressed = true
+                onClick()
+            },
+        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(12.dp)
+        ) {
+            // Imagen del platillo
+            when {
+                !dish.imageUri.isNullOrBlank() -> {
+                    AsyncImage(
+                        model = ImageRequest.Builder(LocalContext.current)
+                            .data(dish.imageUri)
+                            .crossfade(true)
+                            .build(),
+                        contentDescription = dish.name,
+                        modifier = Modifier
+                            .size(100.dp)
+                            .padding(end = 12.dp),
+                        contentScale = ContentScale.Crop
+                    )
+                }
+                dish.imageRes != null && dish.imageRes != 0 -> {
+                    Image(
+                        painter = painterResource(id = dish.imageRes),
+                        contentDescription = dish.name,
+                        modifier = Modifier
+                            .size(100.dp)
+                            .padding(end = 12.dp),
+                        contentScale = ContentScale.Crop
+                    )
+                }
+                else -> {
+                    // Placeholder si no hay imagen
+                    Card(
+                        modifier = Modifier
+                            .size(100.dp)
+                            .padding(end = 12.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant
+                        )
+                    ) {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text("Sin imagen", fontSize = 12.sp)
+                        }
+                    }
+                }
+            }
+            
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = dish.name,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = dish.description,
+                    fontSize = 14.sp,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                    maxLines = 2
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "$${String.format("%.0f", dish.price)}",
+                    color = MaterialTheme.colorScheme.primary,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Medium
+                )
             }
         }
     }
