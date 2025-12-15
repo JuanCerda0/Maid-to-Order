@@ -31,8 +31,9 @@ import pkg.maid_to_order.ui.screens.CartScreen
 import pkg.maid_to_order.ui.screens.DishDetailScreen
 import pkg.maid_to_order.ui.screens.FormScreen
 import pkg.maid_to_order.ui.screens.HomeScreen
+import pkg.maid_to_order.ui.screens.HistoryScreen
 import pkg.maid_to_order.ui.screens.SettingsScreen
-import pkg.maid_to_order.ui.theme.MaidToOrderTheme
+import pkg.maid_to_order.ui.theme.MaidtoOrderTheme
 import pkg.maid_to_order.viewmodel.CartViewModel
 import pkg.maid_to_order.viewmodel.FormViewModel
 import pkg.maid_to_order.viewmodel.MenuViewModel
@@ -45,8 +46,8 @@ class MainActivity : ComponentActivity() {
         setContent {
             val settingsViewModel: SettingsViewModel = viewModel()
             val isDarkMode by settingsViewModel.isDarkMode.collectAsState()
-
-            MaidToOrderTheme(darkTheme = isDarkMode) {
+            
+            MaidtoOrderTheme(darkTheme = isDarkMode) {
                 MainApp(settingsViewModel)
             }
         }
@@ -129,6 +130,9 @@ fun MainApp(settingsViewModel: SettingsViewModel) {
                     settingsViewModel = settingsViewModel
                 )
             }
+            composable(Screen.History.route) {
+                HistoryScreen(navController = navController)
+            }
 
             composable(Screen.AdminLogin.route) {
                 AdminLoginScreen(navController = navController)
@@ -143,6 +147,5 @@ fun MainApp(settingsViewModel: SettingsViewModel) {
         }
     }
 }
-
 
 

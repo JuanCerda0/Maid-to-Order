@@ -8,6 +8,7 @@ sealed class Screen(val route: String) {
     object Settings : Screen("settings")
     object Admin : Screen("admin")
     object AdminLogin : Screen("admin_login")
+    object History : Screen("history")
 
     class DishDetail(val dishId: Int) : Screen("detail/$dishId")
 

@@ -18,7 +18,6 @@ import androidx.core.content.ContextCompat
 import java.util.concurrent.Executor
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
-import pkg.maid_to_order.utils.VibrationUtils
 
 @Composable
 fun CameraPreview(
@@ -43,7 +42,8 @@ fun CameraPreview(
         Spacer(modifier = Modifier.height(16.dp))
         Button(
             onClick = {
-                VibrationUtils.vibrateMedium(context)
+                // Por ahora, usaremos un selector de imágenes simple
+                // La implementación completa de CameraX requiere más configuración
             }
         ) {
             Text("Tomar Foto")
