@@ -1,62 +1,46 @@
-# Maid to Order Backend
+# Maid to Order - Backend Microservices
 
-Backend REST API desarrollado con Spring Boot y Kotlin para el sistema de gestión de restaurante Maid to Order.
+Este proyecto Spring Boot/Kotlin está dividido en cuatro microservicios independientes más un gateway. Cada módulo expone sus endpoints con capas Controller → Service → Repository y utiliza H2 en memoria para facilitar las demostraciones.
 
-## Características
+| Servicio | Puerto | Responsabilidad |
+| --- | --- | --- |
+| `gateway-service` | 8080 | Spring Cloud Gateway que expone `/api/**` y enruta a los demás servicios. |
+| `dishes-service` | 8081 | CRUD de platos y carga de datos iniciales. |
+| `orders-service` | 8082 | Gestión de pedidos; consulta a `dishes-service` para validar precios. |
+| `specials-service` | 8083 | Especialidades del día / chef. |
 
-- API RESTful completa
-- Persistencia con JPA/H2
-- Pruebas unitarias
-- Inicialización automática de datos
-- CORS habilitado para desarrollo
-
-## Endpoints Principales
-
-### Platos (`/api/dishes`)
-- `GET /api/dishes` - Listar todos los platos
-- `GET /api/dishes?category=Sopas` - Filtrar por categoría
-- `GET /api/dishes?available=true` - Solo disponibles
-- `GET /api/dishes?search=ramen` - Buscar platos
-- `GET /api/dishes/{id}` - Obtener plato por ID
-- `POST /api/dishes` - Crear plato
-- `PUT /api/dishes/{id}` - Actualizar plato
-- `DELETE /api/dishes/{id}` - Eliminar plato
-
-### Platos Especiales (`/api/special-dishes`)
-- `GET /api/special-dishes` - Listar especialidades disponibles
-- `GET /api/special-dishes?today=true` - Especiales del día
-- `GET /api/special-dishes?type=CHEF_SPECIAL` - Por tipo
-- `POST /api/special-dishes` - Crear especialidad
-- `DELETE /api/special-dishes/{id}` - Eliminar especialidad
-
-### Pedidos (`/api/orders`)
-- `GET /api/orders` - Listar todos los pedidos
-- `GET /api/orders?status=PENDING` - Filtrar por estado
-- `GET /api/orders/{id}` - Obtener pedido por ID
-- `POST /api/orders` - Crear pedido
-- `PUT /api/orders/{id}/status` - Actualizar estado
-- `DELETE /api/orders/{id}` - Eliminar pedido
-
-## Ejecución
-
-**Desde esta carpeta (Recomendado):**
+## Cómo ejecutar
+Desde esta carpeta puedes iniciar cada módulo (en terminales separados):
 ```bash
-.\gradlew.bat bootRun
+./gradlew dishes-service:bootRun
+./gradlew orders-service:bootRun
+./gradlew specials-service:bootRun
+./gradlew gateway-service:bootRun
 ```
 
-El servidor iniciará en `http://localhost:8080`
-
-## Consola H2
-
-Acceder a `http://localhost:8080/h2-console` con:
-- JDBC URL: `jdbc:h2:mem:maidtoorderdb`
-- Usuario: `sa`
-- Contraseña: (vacía)
-
-## Pruebas
-
-**Desde esta carpeta:**
+Si prefieres compilar todo usa:
 ```bash
-.\gradlew.bat test
+./gradlew build
 ```
 
+## Endpoints
+Todos los endpoints están disponibles a través del gateway (`http://localhost:8080/api/...`). Ejemplos:
+
+- `GET /api/dishes`, `POST /api/dishes`, `PUT /api/dishes/{id}`, `DELETE /api/dishes/{id}`
+- `GET /api/special-dishes?today=true`, `POST /api/special-dishes`
+- `GET /api/orders?status=PENDING`, `POST /api/orders`, `PUT /api/orders/{id}/status`
+
+Los servicios de platos y especiales inicializan datos de demostración mediante `DataInitializer`.
+
+## Pruebas unitarias
+```
+./gradlew test
+```
+Este comando ejecuta los tests de `dishes-service` y `orders-service`, donde se validan las reglas de negocio usando MockK (por ejemplo, cálculo de totales al crear un pedido).
+
+## Consolas H2
+- Dishes: `http://localhost:8081/h2-console`
+- Orders: `http://localhost:8082/h2-console`
+- Specials: `http://localhost:8083/h2-console`
+
+Usuario `sa`, contraseña vacía y URL `jdbc:h2:mem:<nombre>` (`dishesdb`, `ordersdb`, `specialsdb`).

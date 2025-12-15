@@ -8,7 +8,6 @@ import com.maidtoorder.orderservice.repository.OrderRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.client.RestTemplate
-import org.springframework.web.client.exchange
 import java.time.LocalDateTime
 
 @Service
@@ -75,12 +74,9 @@ class OrderService(
             true
         } else false
 
-    private fun fetchDish(id: Long): DishSummaryDto? {
-        val response = restTemplate.exchange<DishSummaryDto>(
+    private fun fetchDish(id: Long): DishSummaryDto? =
+        restTemplate.getForObject(
             "http://localhost:8081/api/dishes/$id",
-            org.springframework.http.HttpMethod.GET,
-            null
+            DishSummaryDto::class.java
         )
-        return response.body
-    }
 }

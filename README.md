@@ -1,303 +1,94 @@
-# Maid to Order - Sistema de Restaurante
+# Maid to Order
 
-## Descripción del Proyecto
+Sistema completo para restaurantes que incluye una app Android en Kotlin/Compose y un backend en Kotlin/Spring Boot dividido en microservicios. El proyecto permite mostrar el menu, gestionar pedidos, administrar platos y revisar un historial local, todo respaldado por pruebas unitarias, persistencia y un APK firmado listo para distribución.
 
-Maid to Order es una aplicación móvil desarrollada en Kotlin con Jetpack Compose que permite a los clientes de un restaurante visualizar el menú, realizar pedidos y gestionar su carrito de compras. El sistema incluye un backend desarrollado con Spring Boot que proporciona una API REST para gestionar platos, pedidos y especialidades.
+## Arquitectura general
 
-## Arquitectura
+| Capa | Tecnologias | Detalles |
+| --- | --- | --- |
+| App Android | Kotlin, Jetpack Compose, MVVM | ViewModels con StateFlow, Retrofit, DataStore (modo oscuro y carrito) y Room (historial de pedidos). |
+| Backend | Spring Boot 3.2, Kotlin, microservicios | `gateway-service` + `dishes-service` + `orders-service` + `specials-service`, todos con H2 y capas Controller/Service/Repository. |
+| API externa | Open-Meteo | Consumida via Retrofit y mostrada en la pantalla Home para enriquecer la experiencia del usuario. |
 
-### Frontend (Android App)
-- **Arquitectura**: MVVM (Model-View-ViewModel)
-- **Framework UI**: Jetpack Compose
-- **Lenguaje**: Kotlin
-- **Persistencia Local**: DataStore para preferencias y carrito
-- **Comunicación con Backend**: Retrofit para llamadas HTTP
+La app navega mediante `Screen.kt`, cada pantalla (Home, Detalle, Carrito, Formulario, Ajustes, Admin, Historial) usa su ViewModel dedicado y los datos fluyen desde repositorios locales o remotos. El backend mantiene la separación clásica Controller → Service → Repository, equivalente a la capa ViewModel en MVVM.
 
-### Backend (Spring Boot)
-- **Framework**: Spring Boot 3.2.0
-- **Lenguaje**: Kotlin
-- **Base de Datos**: H2 (en memoria) con JPA
-- **API**: RESTful con controladores para platos, pedidos y especialidades
-
-## Estructura del Proyecto
-
+## Estructura del repositorio
 ```
-Proyecto/
-├── app/
-│   └── src/
-│       └── main/
-│           └── java/
-│               └── pkg/
-│                   └── maid_to_order/
-│                       ├── data/
-│                       │   ├── model/          # Modelos de datos
-│                       │   └── Screen.kt      # Navegación
-│                       ├── network/
-│                       │   ├── api/           # Interfaces Retrofit
-│                       │   ├── dto/           # DTOs de red
-│                       │   └── mapper/        # Mappers DTO -> Domain
-│                       ├── repository/        # Repositorios locales
-│                       ├── ui/
-│                       │   ├── components/    # Componentes reutilizables
-│                       │   ├── screens/        # Pantallas de la app
-│                       │   └── theme/          # Tema y estilos
-│                       ├── utils/              # Utilidades
-│                       └── viewmodel/          # ViewModels MVVM
-└── Maid-to-Order-Backend/
-    └── src/
-        └── main/
-            └── kotlin/
-                └── com/
-                    └── maidtoorder/
-                        └── backend/
-                            ├── config/        # Configuración
-                            ├── controller/    # Controladores REST
-                            ├── dto/           # DTOs de API
-                            ├── model/         # Entidades JPA
-                            ├── repository/    # Repositorios JPA
-                            └── service/        # Lógica de negocio
+.
+├── app/                                    # App Android
+│   ├── build.gradle.kts                    # Configuración con Compose, Retrofit, Room, DataStore
+│   └── src/main/java/pkg/maid_to_order
+│       ├── data/                           # Modelos y rutas de navegación
+│       ├── network/                        # Retrofit API/DTO/Mappers (propia + Open-Meteo)
+│       ├── repository/                     # DataStore helpers + OrderHistoryRepository (Room)
+│       ├── ui/                             # Screens, components y tema
+│       ├── utils/                          # Utilidades (p.ej. Cámara)
+│       └── viewmodel/                      # ViewModels MVVM (Menu, Cart, Form, Settings, Weather, History)
+├── Maid-to-Order-Backend/                  # Proyecto multi módulo
+│   ├── gateway-service/                    # Spring Cloud Gateway (puerto 8080)
+│   ├── dishes-service/                     # CRUD de platos (puerto 8081)
+│   ├── orders-service/                     # Pedidos + integración con dishes (puerto 8082)
+│   └── specials-service/                   # Platos especiales (puerto 8083)
+└── ...                                     # Scripts, keystore y documentación
 ```
 
-## Funcionalidades Principales
+## Funcionalidades destacadas
 
 ### App Android
-
-1. **Pantalla Principal (Home)**
-   - Visualización del menú completo
-   - Búsqueda de platos
-   - Filtrado por categorías
-   - Sección de platos especiales del día
-   - Animaciones fluidas en las transiciones
-
-2. **Detalle de Plato**
-   - Información completa del plato
-   - Opción para añadir al carrito
-   - Visualización de imágenes
-
-3. **Carrito de Compras**
-   - Gestión de items en el carrito
-   - Cálculo automático del total
-   - Persistencia local con DataStore
-
-4. **Formulario de Pedido**
-   - Captura de número de mesa
-   - Notas adicionales
-   - Envío del pedido al backend
-
-5. **Pantalla de Administración**
-   - Gestión de platos (añadir, editar, eliminar)
-   - Acceso protegido con login
-
-6. **Configuraciones**
-   - Modo oscuro/claro
-   - Preferencias de usuario
-
-### Backend API
-
-1. **Gestión de Platos (`/api/dishes`)**
-   - GET: Obtener todos los platos (con filtros opcionales)
-   - GET /{id}: Obtener plato por ID
-   - POST: Crear nuevo plato
-   - PUT /{id}: Actualizar plato
-   - DELETE /{id}: Eliminar plato
-
-2. **Platos Especiales (`/api/special-dishes`)**
-   - GET: Obtener platos especiales (del día, por tipo)
-   - POST: Crear plato especial
-   - DELETE /{id}: Eliminar plato especial
-
-3. **Gestión de Pedidos (`/api/orders`)**
-   - GET: Obtener todos los pedidos
-   - GET /{id}: Obtener pedido por ID
-   - POST: Crear nuevo pedido
-   - PUT /{id}/status: Actualizar estado del pedido
-   - DELETE /{id}: Eliminar pedido
-
-## Instalación y Configuración
-
-### Requisitos Previos
-
-- Android Studio (para la app)
-- JDK 17 o superior (para el backend)
-- Gradle 8.x
+- **Home**: búsqueda por categoría, tarjetas animadas, carrusel de especiales y widget de clima (Open-Meteo).
+- **Detalle**: muestra información completa del plato y permite añadirlo al carrito con animaciones.
+- **Carrito + Formulario**: valida el número de mesa, envía el pedido al backend y guarda el historial en Room.
+- **Administrador**: CRUD de platos consumiendo directamente los endpoints REST (POST/PUT/DELETE) y usando cámara/galería.
+- **Ajustes/Historial**: cambios de tema vía DataStore y consulta de pedidos guardados localmente.
 
 ### Backend
+- **Microservicios independientes** con datos iniciales y endpoints REST (`/api/dishes`, `/api/orders`, `/api/special-dishes`).
+- **Orders-service** consulta a dishes-service para validar precios antes de crear el pedido.
+- **Gateway-service** expone una única URL (`http://localhost:8080/api`) para simplificar la integración con Android.
 
-**Opción 1: Desde la raíz del proyecto (Recomendado)**
-
-Desde la carpeta raíz del proyecto, ejecuta:
-
-**Windows (CMD):**
-```bash
-run-backend.bat
-```
-
-**Windows (PowerShell):**
-```powershell
-.\run-backend.ps1
-```
-
-**Opción 2: Desde la carpeta del backend**
-
-1. Navegar a la carpeta del backend:
-```bash
-cd Maid-to-Order-Backend
-```
-
-2. Ejecutar el backend:
-```bash
-.\gradlew.bat bootRun
-```
-
-El backend estará disponible en `http://localhost:8080/api`
-
-**Nota**: La consola H2 estará disponible en `http://localhost:8080/api/h2-console` para inspeccionar la base de datos.
-
-### App Android
-
-1. Abrir el proyecto en Android Studio
-2. Configurar la URL del backend en `RetrofitClient.kt`:
-   - Para emulador: `http://10.0.2.2:8080/api/`
-   - Para dispositivo físico: `http://[IP_LOCAL]:8080/api/`
-
-3. Sincronizar el proyecto con Gradle
-4. Ejecutar la app en un dispositivo o emulador
-
-## Uso del Sistema
-
-### Como Cliente
-
-1. **Ver el Menú**
-   - Al abrir la app, se muestra automáticamente el menú completo
-   - Usa la barra de búsqueda para encontrar platos específicos
-   - Filtra por categorías usando los chips en la parte superior
-   - Los platos especiales del día aparecen en una sección destacada
-
-2. **Añadir al Carrito**
-   - Toca cualquier plato para ver sus detalles
-   - Presiona el botón "Añadir al Carrito"
-   - El plato se añadirá con cantidad 1
-   - Puedes modificar la cantidad desde el carrito
-
-3. **Realizar un Pedido**
-   - Ve al carrito desde el icono en la barra superior
-   - Revisa los items y el total
-   - Presiona "Realizar Pedido"
-   - Ingresa el número de mesa (obligatorio)
-   - Añade notas opcionales
-   - Confirma el pedido
-
-4. **Ver Configuraciones**
-   - Accede a ajustes desde el icono de engranaje
-   - Cambia entre modo claro y oscuro
-
-### Como Administrador
-
-1. **Acceder al Panel de Administración**
-   - Toca el icono de candado en la barra superior
-   - Ingresa las credenciales de administrador
-
-2. **Gestionar Platos**
-   - Ver lista de todos los platos
-   - Añadir nuevos platos con nombre, descripción, precio y categoría
-   - Editar platos existentes
-   - Eliminar platos
-
-## Persistencia de Datos
-
-### App Android
-- **DataStore**: Almacena preferencias de usuario (modo oscuro) y el carrito de compras
-- El carrito persiste entre sesiones
+## Instalación y ejecución
 
 ### Backend
-- **H2 Database**: Base de datos en memoria que se inicializa con datos de ejemplo al arrancar
-- Los datos se pierden al reiniciar el servidor (configuración por defecto)
-- Para persistencia permanente, cambiar a PostgreSQL o MySQL en `application.yml`
-
-## Pruebas Unitarias
-
-El backend incluye pruebas unitarias para los servicios principales:
-
-**Desde la raíz del proyecto:**
-
-**Windows (CMD):**
+Desde la carpeta `Maid-to-Order-Backend` puedes iniciar cada servicio en terminales separados:
 ```bash
-test-backend.bat
+./gradlew gateway-service:bootRun
+./gradlew dishes-service:bootRun
+./gradlew orders-service:bootRun
+./gradlew specials-service:bootRun
 ```
 
-**Windows (PowerShell):**
-```powershell
-.\test-backend.ps1
-```
+Los servicios corren en los puertos 8080 (gateway), 8081 (platos), 8082 (pedidos) y 8083 (especiales). Si prefieres compilar todo en un paso usa `./gradlew build` dentro de la carpeta backend.
 
-**O desde la carpeta del backend:**
-```bash
-cd Maid-to-Order-Backend
-.\gradlew.bat test
-```
+### App Android
+1. Abre el módulo `app/` en Android Studio Giraffe o superior.
+2. Asegúrate de que el backend gateway esté activo y apunta a `http://10.0.2.2:8080/api/` en `RetrofitClient.kt` (para emulador). Para un dispositivo físico, reemplaza por la IP local.
+3. Sincroniza el proyecto y ejecuta en emulador o dispositivo.
+4. Para obtener el APK firmado basta con `./gradlew :app:assembleRelease`. El archivo queda en `app/build/outputs/apk/release/app-release.apk` firmado con `maid-to-order-keystore.jks`.
 
-Las pruebas cubren:
-- Creación, lectura, actualización y eliminación de platos
-- Creación y gestión de pedidos
-- Validaciones de negocio
+## Pruebas unitarias
 
-## Características Técnicas Destacadas
+| Módulo | Comando | Cobertura |
+| --- | --- | --- |
+| Backend | `cd Maid-to-Order-Backend && ../gradlew test` | Servicios `DishService` y `OrderService` con MockK y validación de reglas de negocio. |
+| App | `./gradlew :app:testDebugUnitTest` | `WeatherViewModelTest` usando coroutines-test + MockK (API externa). |
 
-### Animaciones
-- Transiciones suaves entre pantallas
-- Efectos de escala en botones y tarjetas
-- Animaciones de entrada/salida en listas
-- Efectos de shimmer y bounce
+Los reportes de Gradle quedan en `*/build/reports/tests/`. Puedes ejecutar ambos comandos antes de la defensa para demostrar los resultados.
 
-### Arquitectura MVVM
-- Separación clara de responsabilidades
-- ViewModels manejan la lógica de negocio
-- UI reactiva con Compose
-- Estado observable con StateFlow y State
+## Persistencia local y recursos nativos
+- DataStore guarda el tema oscuro y el carrito (`SettingsViewModel`, `CartViewModel`).
+- Room almacena un historial de pedidos (`HistoryViewModel`, `HistoryScreen`), accesible desde Ajustes.
+- La pantalla de admin integra cámara y galería usando `CameraUtils` y `ActivityResultContracts` (permisos nativos).
 
-### Integración con API
-- Retrofit para llamadas HTTP
-- Manejo de errores y estados de carga
-- Fallback a datos locales si la API no está disponible
-- Mappers para convertir entre DTOs y modelos de dominio
+## Consumo de API externa
+`WeatherViewModel` consulta Open-Meteo mediante `WeatherClient`. La tarjeta “Clima actual” en Home muestra temperatura, viento y estado, y permite reintentar en caso de error. Esto demuestra la integración de un servicio externo sin interferir con los microservicios propios.
 
-## Solución de Problemas
+## Defensa recomendada
+1. **Setup**: abrir Android Studio, correr el gateway y los módulos desde consola.
+2. **Arquitectura**: mostrar carpetas `ui/`, `viewmodel/`, `repository/` y los módulos del backend (controller/service/repository).
+3. **UI/UX**: recorrer Home (animaciones + clima), Carrito/Formulario (validaciones) y Ajustes/Historial (Room + DataStore).
+4. **Admin**: crear/editar un plato mostrando llamadas reales al backend (usa logcat o el logging interceptor).
+5. **Pruebas**: ejecutar `../gradlew test` dentro del backend y `./gradlew :app:testDebugUnitTest` para la app.
+6. **APK**: enseñar `app-release.apk` generado por `assembleRelease` y explicar el uso del `.jks` en `signingConfigs`.
+7. **Cambio en vivo**: por ejemplo, agregar una validación en `FormViewModel` o un nuevo filtro en `MenuViewModel` para demostrar dominio del código.
 
-### El backend no inicia
-- Verificar que el puerto 8080 esté libre
-- Revisar los logs en la consola
-- Asegurarse de tener JDK 17 instalado
-
-### La app no se conecta al backend
-- Verificar que el backend esté corriendo
-- Revisar la URL en `RetrofitClient.kt`
-- Para dispositivo físico, asegurarse de que la IP sea correcta y el dispositivo esté en la misma red
-- Verificar permisos de internet en el manifest
-
-### Los datos no persisten
-- El backend usa H2 en memoria por defecto (los datos se pierden al reiniciar)
-- El carrito de la app persiste en DataStore localmente
-- Para persistencia permanente en backend, configurar una base de datos externa
-
-## Próximas Mejoras
-
-- [ ] Autenticación de usuarios
-- [ ] Notificaciones push para pedidos
-- [ ] Historial de pedidos
-- [ ] Sistema de valoraciones
-- [ ] Integración con pasarelas de pago
-- [ ] Dashboard de administración más completo
-- [ ] Reportes y estadísticas
-
-## Licencia
-
-Este proyecto fue desarrollado como parte de un encargo académico.
-
-## Contacto
-
-Para preguntas o sugerencias sobre el sistema, contactar al desarrollador.
-
----
-
-**Nota**: Este README fue creado para documentar el sistema Maid to Order. El proyecto utiliza tecnologías modernas de Android y Spring Boot para proporcionar una experiencia completa de gestión de restaurante.
-
+Con esta guía tendrás cubiertos los requisitos académicos (MVVM, microservicios, API externa, persistencia, pruebas y APK firmado) y una narrativa clara para la defensa.
