@@ -70,7 +70,9 @@ Los servicios corren en los puertos 8080 (gateway), 8081 (platos), 8082 (pedidos
 | Módulo | Comando | Cobertura |
 | --- | --- | --- |
 | Backend | `cd Maid-to-Order-Backend && ../gradlew test` | Servicios `DishService` y `OrderService` con MockK y validación de reglas de negocio. |
-| App | `./gradlew :app:testDebugUnitTest` | `WeatherViewModelTest` usando coroutines-test + MockK (API externa). |
+| App | `./gradlew :app:testDebugUnitTest` | `WeatherViewModelTest` + `MenuViewModelTest` con coroutines-test y MockK. |
+
+> Detalles completos en `docs/pruebas/Pruebas Unitarias - Maid to Order Backend.md`.
 
 Los reportes de Gradle quedan en `*/build/reports/tests/`. Puedes ejecutar ambos comandos antes de la defensa para demostrar los resultados.
 
