@@ -1,167 +1,61 @@
-# Cómo Demostrar que la App Consume APIs
+# Cómo demostrar que la app consume APIs
 
-## 1. Mostrar el Código (Parte Técnica)
+## 1. Mostrar el código relevante (parte técnica)
 
-### A. Cliente Retrofit (`RetrofitClient.kt`)
-**Ubicación:** `app/src/main/java/pkg/maid_to_order/network/api/RetrofitClient.kt`
+| Archivo | Ubicación | Qué enseñar |
+| --- | --- | --- |
+| `RetrofitClient.kt` | `app/src/main/java/pkg/maid_to_order/network/api` | Configuración común para `http://10.0.2.2:8080/api/` (gateway), interceptor OkHttp y timeouts. |
+| `MaidToOrderApi.kt` | misma carpeta | Declaraciones `@GET`, `@POST`, `@PUT`, `@DELETE` para `/dishes`, `/orders`, `/special-dishes`. |
+| `WeatherClient.kt` / `WeatherApi.kt` | `network/api` | Segundo Retrofit apuntando a `https://api.open-meteo.com/v1/forecast`. |
+| `MenuViewModel.kt`, `FormViewModel.kt`, `WeatherViewModel.kt` | `viewmodel` | Ejemplos de uso real: `RetrofitClient.api.getDishes()`, `createOrder`, `WeatherClient.api.getCurrentWeather()`, manejo de estados/error. |
 
-**Qué mostrar:**
-- Configuración de Retrofit con la URL base
-- Interceptor de logging (muestra todas las peticiones HTTP)
-- Cliente OkHttp configurado
+Explica también la arquitectura de backend: la app solo conoce el **gateway** (`8080`) y éste enruta a los microservicios de platos (8081), pedidos (8082) y especiales (8083). Eso demuestra la integración con microservicios reales.
 
-**Puntos clave:**
-```kotlin
-private const val BASE_URL = "http://10.0.2.2:8080/api/"
-val api: MaidToOrderApi = retrofit.create(MaidToOrderApi::class.java)
-```
+## 2. Demostración en vivo
 
-### B. Interface de la API (`MaidToOrderApi.kt`)
-**Ubicación:** `app/src/main/java/pkg/maid_to_order/network/api/MaidToOrderApi.kt`
+### Logcat (más directo)
+1. View → Tool Windows → Logcat. Filtra por `OkHttp`.
+2. Acciones:
+   - Abrir Home → aparecerán `GET /api/dishes` y `GET /api/special-dishes?today=true`.
+   - Esperar la tarjeta de clima → `GET https://api.open-meteo.com/...`.
+   - Crear/editar plato desde Admin → `POST/PUT /api/dishes`.
+   - Confirmar pedido → `POST /api/orders`.
+3. Comenta cada línea (método, URL, código HTTP, cuerpo).
 
-**Qué mostrar:**
-- Anotaciones `@GET`, `@POST`, `@PUT`, `@DELETE`
-- Endpoints definidos (dishes, orders, special-dishes)
-- Parámetros con `@Query` y `@Path`
+### Network Inspector
+1. View → Tool Windows → App Inspection → Network.
+2. Muestra cada request/response, headers, payload y tiempos.
+3. Útil para enseñar cómo se envía el JSON del formulario o del CRUD administrativo.
 
-**Ejemplo:**
-```kotlin
-@GET("dishes")
-suspend fun getDishes(...): Response<List<DishDto>>
-```
+### Logs del backend
+1. Mantén las consolas de `dishes-service`, `orders-service` y `specials-service` abiertas.
+2. Cuando la app haga un request, verás en cada servicio los logs correspondientes (ideal para reforzar que son microservicios independientes).
 
-### C. Uso en ViewModels (`MenuViewModel.kt`)
-**Ubicación:** `app/src/main/java/pkg/maid_to_order/viewmodel/MenuViewModel.kt`
+### Postman/Navegador (opcional)
+- `http://localhost:8080/api/dishes` devuelve exactamente los datos que la app muestra. Puedes abrirlo para reforzar que la API es pública y la app solo consume esa información.
 
-**Qué mostrar:**
-- Línea 35: `RetrofitClient.api.getDishes()`
-- Manejo de respuestas con `response.isSuccessful`
-- Mappers que convierten DTOs a modelos de dominio
-- Manejo de errores y fallback
+## 3. Flujo de presentación recomendado
 
-## 2. Demostración Práctica (En Vivo)
+1. **Slide arquitectura:** App → Retrofit → Gateway → Microservicios → H2. Añade la API externa (Open-Meteo) como flujo paralelo.
+2. **Slide flujo de datos:** `MenuViewModel` llama `getDishes()`, Retrofit hace `GET`, gateway enruta a `dishes-service`, la respuesta se mapea y la UI se actualiza. Repite para `FormViewModel` y `WeatherViewModel`.
+3. **Slide código:** capturas de `RetrofitClient`, `MaidToOrderApi`, `WeatherClient` y los ViewModels.
+4. **Demo en vivo:** Logcat/Network Inspector mostrando `GET`, `POST`, etc. Termina con la API externa para destacar la integración adicional.
 
-### Opción A: Usar Logcat de Android Studio (RECOMENDADO)
+## 4. Endpoints involucrados
+- `GET /api/dishes`, `POST /api/dishes`, `PUT /api/dishes/{id}`, `DELETE /api/dishes/{id}` (desde Home/Admin).
+- `GET /api/special-dishes?today=true`.
+- `POST /api/orders`.
+- `GET https://api.open-meteo.com/v1/forecast?...&current_weather=true` (tarjeta de clima).
 
-1. **Abrir Logcat en Android Studio:**
-   - View → Tool Windows → Logcat
-   - O clic en la pestaña "Logcat" abajo
+## 5. Checklist antes de la demo
+- [ ] Servicios Spring Boot levantados: gateway 8080 + dishes 8081 + orders 8082 + specials 8083.
+- [ ] App configurada con `BASE_URL = http://10.0.2.2:8080/api/`.
+- [ ] Logcat filtrado por `OkHttp` o Network Inspector abierto.
+- [ ] Mostrar los archivos clave de Retrofit y ViewModels.
+- [ ] Ejecutar acciones en la app (listar, editar, crear pedido, refrescar clima) mientras se observan las peticiones.
 
-2. **Filtrar por "OkHttp":**
-   - En el buscador de Logcat, escribe: `OkHttp`
-   - Verás todas las peticiones HTTP en tiempo real
-
-3. **Qué verás:**
-   ```
-   D/OkHttp: --> GET http://10.0.2.2:8080/api/dishes
-   D/OkHttp: <-- 200 OK http://10.0.2.2:8080/api/dishes (234ms)
-   D/OkHttp: [{"id":1,"name":"Katsudon",...}]
-   ```
-
-4. **Pasos para demostrar:**
-   - Abre la app
-   - Muestra Logcat con las peticiones
-   - Explica: "Aquí vemos que la app hace GET a /api/dishes"
-   - Añade un plato al carrito y muestra el POST a /api/orders
-
-### Opción B: Usar Network Inspector (Android Studio)
-
-1. **Abrir Network Inspector:**
-   - View → Tool Windows → App Inspection
-   - Pestaña "Network"
-
-2. **Qué muestra:**
-   - Lista de todas las peticiones HTTP
-   - Request/Response completos
-   - Tiempo de respuesta
-   - Headers y body
-
-3. **Ventajas:**
-   - Interfaz visual más clara
-   - Puedes ver el JSON completo
-   - Fácil de entender para la audiencia
-
-### Opción C: Usar Postman o Navegador
-
-1. **Mientras la app corre, abre en el navegador:**
-   ```
-   http://localhost:8080/api/dishes
-   ```
-
-2. **Muestra que:**
-   - La misma API que consume la app
-   - Los mismos datos que aparecen en la app
-   - La app consume esta API REST
-
-## 3. Estructura para la Presentación
-
-### Slide 1: Arquitectura de Consumo de API
-```
-App Android (Kotlin)
-    ↓ Retrofit
-Cliente HTTP (OkHttp)
-    ↓ HTTP Requests
-Backend Spring Boot
-    ↓ JPA
-Base de Datos H2
-```
-
-### Slide 2: Flujo de Datos
-1. **Usuario abre la app** → MenuViewModel se inicializa
-2. **MenuViewModel llama** → `RetrofitClient.api.getDishes()`
-3. **Retrofit hace petición HTTP** → `GET http://10.0.2.2:8080/api/dishes`
-4. **Backend responde** → JSON con lista de platos
-5. **Mapper convierte** → DTOs a modelos de dominio
-6. **UI se actualiza** → Lista de platos visible
-
-### Slide 3: Código Clave
-- Mostrar `RetrofitClient.kt` (configuración)
-- Mostrar `MaidToOrderApi.kt` (endpoints)
-- Mostrar `MenuViewModel.kt` líneas 30-51 (uso)
-
-### Slide 4: Demostración en Vivo
-- Abrir Logcat
-- Mostrar peticiones HTTP en tiempo real
-- Explicar cada petición
-
-## 4. Puntos Clave para Mencionar
-
-✅ **Retrofit:** Biblioteca para consumir APIs REST  
-✅ **Coroutines:** Llamadas asíncronas (suspend functions)  
-✅ **DTOs:** Data Transfer Objects para serialización JSON  
-✅ **Mappers:** Conversión entre DTOs y modelos de dominio  
-✅ **Manejo de Errores:** Try-catch y fallback a datos locales  
-✅ **Logging:** Interceptor muestra todas las peticiones  
-
-## 5. Endpoints que Consume la App
-
-1. **GET /api/dishes** - Al abrir la app (cargar menú)
-2. **GET /api/special-dishes?today=true** - Cargar especialidades
-3. **POST /api/orders** - Al confirmar un pedido
-
-## 6. Checklist para la Demostración
-
-- [ ] Backend corriendo en `http://localhost:8080`
-- [ ] App instalada en emulador/dispositivo
-- [ ] Logcat abierto y filtrado por "OkHttp"
-- [ ] Mostrar código de RetrofitClient
-- [ ] Mostrar código de MenuViewModel
-- [ ] Abrir la app y mostrar peticiones en Logcat
-- [ ] Hacer un pedido y mostrar POST en Logcat
-- [ ] Opcional: Mostrar respuesta en navegador
-
-## 7. Respuestas a Preguntas Comunes
-
-**P: ¿Qué pasa si el backend no está disponible?**  
-R: La app tiene fallback a datos locales (línea 42-47 de MenuViewModel)
-
-**P: ¿Cómo se manejan los errores?**  
-R: Try-catch captura excepciones y muestra mensajes al usuario
-
-**P: ¿Es seguro?**  
-R: Para producción se usaría HTTPS, aquí es HTTP para desarrollo local
-
-**P: ¿Cómo sabes que funciona?**  
-R: Logcat muestra las peticiones HTTP en tiempo real, puedes ver request/response
-
-
+## 6. FAQs
+- **¿Qué pasa si uno de los microservicios falla?** MenuViewModel tiene fallback local para el menú y los ViewModels muestran mensajes de error al usuario.
+- **¿Cómo se valida la API externa?** WeatherViewModel expone `WeatherUiState` y, en caso de error, se muestra una tarjeta con botón “Reintentar”.
+- **¿Cómo sabemos que la app realmente habla con el backend?** Logcat + los logs de cada microservicio + la inspección de red en Android Studio muestran el tráfico real.
+- **¿Por qué dos clientes Retrofit?** Uno para los microservicios propios (gateway) y otro para Open-Meteo, demostrando separación de responsabilidades y consumo de una API pública adicional.
