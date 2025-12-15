@@ -1,19 +1,23 @@
 package pkg.maid_to_order.viewmodel
 
+import android.app.Application
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.lifecycle.ViewModel
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
+import pkg.maid_to_order.data.local.MaidDatabase
+import pkg.maid_to_order.data.local.OrderHistoryEntity
 import pkg.maid_to_order.data.model.Order
 import pkg.maid_to_order.data.model.OrderItem
 import pkg.maid_to_order.network.api.RetrofitClient
 import pkg.maid_to_order.network.dto.OrderCreateDto
 import pkg.maid_to_order.network.dto.OrderItemCreateDto
+import pkg.maid_to_order.repository.OrderHistoryRepository
 import pkg.maid_to_order.viewmodel.CartViewModel.CartItem
 
-class FormViewModel : ViewModel() {
+class FormViewModel(application: Application) : AndroidViewModel(application) {
     // Solo número de mesa para pedidos en mesa
     var tableNumber by mutableStateOf("")
         private set
@@ -22,10 +26,14 @@ class FormViewModel : ViewModel() {
 
     var tableError by mutableStateOf<String?>(null)
         private set
-    
+
     val isSubmitting = mutableStateOf(false)
     val submitError = mutableStateOf<String?>(null)
     val submitSuccess = mutableStateOf(false)
+
+    private val historyRepository = OrderHistoryRepository(
+        MaidDatabase.getInstance(application).orderHistoryDao()
+    )
 
     fun updateTableNumber(value: String) {
         tableNumber = value
@@ -62,16 +70,16 @@ class FormViewModel : ViewModel() {
             notes = notes.ifBlank { null }
         )
     }
-    
+
     fun submitOrderToApi(cartItems: List<CartItem>) {
         viewModelScope.launch {
             isSubmitting.value = true
             submitError.value = null
             submitSuccess.value = false
-            
+
             try {
                 val orderDto = OrderCreateDto(
-                    items = cartItems.map { 
+                    items = cartItems.map {
                         OrderItemCreateDto(
                             dishId = it.dish.id.toLong(),
                             quantity = it.quantity
@@ -81,9 +89,10 @@ class FormViewModel : ViewModel() {
                     tableNumber = tableNumber,
                     notes = notes.ifBlank { null }
                 )
-                
+
                 val response = RetrofitClient.api.createOrder(orderDto)
                 if (response.isSuccessful) {
+                    saveOrderHistory(cartItems)
                     submitSuccess.value = true
                 } else {
                     submitError.value = "Error al crear el pedido"
@@ -94,5 +103,17 @@ class FormViewModel : ViewModel() {
                 isSubmitting.value = false
             }
         }
+    }
+
+    private suspend fun saveOrderHistory(cartItems: List<CartItem>) {
+        val entry = OrderHistoryEntity(
+            tableNumber = tableNumber.ifBlank { null },
+            total = cartItems.sumOf { it.dish.price * it.quantity },
+            itemCount = cartItems.sumOf { it.quantity },
+            notes = notes.ifBlank { null },
+            createdAt = System.currentTimeMillis(),
+            itemsSummary = cartItems.joinToString { "${it.quantity}x ${it.dish.name}" }
+        )
+        historyRepository.insert(entry)
     }
 }

@@ -105,6 +105,38 @@ fun SettingsScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            // Historial local
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = "Historial de pedidos",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "Consulta los pedidos registrados en este dispositivo.",
+                        fontSize = 14.sp,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                    )
+                    Button(
+                        onClick = { navController.navigate(pkg.maid_to_order.data.Screen.History.route) },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Ver historial")
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
             // Información de la app
             Card(
                 modifier = Modifier.fillMaxWidth(),
@@ -138,4 +170,3 @@ fun SettingsScreen(
         }
     }
 }
-
