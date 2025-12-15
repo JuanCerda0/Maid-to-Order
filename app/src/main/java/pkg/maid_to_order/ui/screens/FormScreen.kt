@@ -18,6 +18,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
@@ -59,6 +60,7 @@ fun FormScreen(
     formViewModel: FormViewModel
 ) {
     var showDialog by remember { mutableStateOf(false) }
+    val isSubmitting by formViewModel.isSubmitting
 
     Scaffold(
         topBar = {
@@ -138,7 +140,7 @@ fun FormScreen(
 
             Button(
                 onClick = {
-                    if (formViewModel.validateForm()) {
+                    if (!isSubmitting && formViewModel.validateForm()) {
                         confirmPressed = true
                         formViewModel.submitOrderToApi(cartViewModel.cartItems.toList())
                     }
@@ -148,15 +150,27 @@ fun FormScreen(
                     .graphicsLayer(scaleX = confirmScale, scaleY = confirmScale),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.primary
-                )
+                ),
+                enabled = !isSubmitting
             ) {
-                Text("Confirmar Pedido", fontSize = 18.sp)
+                if (isSubmitting) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                } else {
+                    Text("Confirmar Pedido", fontSize = 18.sp)
+                }
             }
         }
 
         // Observar el estado del envío
-        LaunchedEffect(formViewModel.submitSuccess.value) {
-            if (formViewModel.submitSuccess.value) {
+        LaunchedEffect(
+            formViewModel.submitSuccess.value,
+            formViewModel.submitError.value
+        ) {
+            if (formViewModel.submitSuccess.value || formViewModel.submitError.value != null) {
                 showDialog = true
             }
         }
@@ -164,28 +178,43 @@ fun FormScreen(
         if (showDialog) {
             AlertDialog(
                 onDismissRequest = { },
-                title = { Text("¡Pedido Confirmado!") },
-                text = { 
+
+                title = {
                     Text(
-                        if (formViewModel.submitError.value != null) {
-                            "Error: ${formViewModel.submitError.value}"
-                        } else {
-                            "Tu pedido ha sido registrado con éxito. Te contactaremos pronto para coordinar la entrega."
-                        }
+                        if (formViewModel.submitError.value != null) "Error al registrar pedido"
+                        else "¡Pedido Confirmado!"
+                    )
+                },
+                text = {
+                    val message = formViewModel.submitError.value
+                    Text(
+                        message?.let { "Error: $it" }
+                            ?: "Tu pedido ha sido registrado con éxito. Te contactaremos pronto para coordinar la entrega."
                     )
                 },
                 confirmButton = {
-                    Button(
-                        onClick = {
-                            cartViewModel.clearCart()
-                            showDialog = false
-                            formViewModel.submitSuccess.value = false
-                            navController.navigate(Screen.Home.route) {
-                                popUpTo(Screen.Home.route) { inclusive = true }
+                    if (formViewModel.submitError.value != null) {
+                        Button(
+                            onClick = {
+                                showDialog = false
+                                formViewModel.submitError.value = null
                             }
+                        ) {
+                            Text("Entendido")
                         }
-                    ) {
-                        Text("Aceptar")
+                    } else {
+                        Button(
+                            onClick = {
+                                cartViewModel.clearCart()
+                                showDialog = false
+                                formViewModel.submitSuccess.value = false
+                                navController.navigate(Screen.Home.route) {
+                                    popUpTo(Screen.Home.route) { inclusive = true }
+                                }
+                            }
+                        ) {
+                            Text("Aceptar")
+                        }
                     }
                 }
             )

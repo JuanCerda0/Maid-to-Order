@@ -6,7 +6,7 @@ Este proyecto Spring Boot/Kotlin está dividido en cuatro microservicios indepen
 | --- | --- | --- |
 | `gateway-service` | 8080 | Spring Cloud Gateway que expone `/api/**` y enruta a los demás servicios. |
 | `dishes-service` | 8081 | CRUD de platos y carga de datos iniciales. |
-| `orders-service` | 8082 | Gestión de pedidos; consulta a `dishes-service` para validar precios. |
+| `orders-service` | 8082 | Gestión de pedidos; consulta a `dishes-service` para validar precios y arma las `OrderItem` antes de persistir para evitar referencias transientes. |
 | `specials-service` | 8083 | Especialidades del día / chef. |
 
 ## Cómo ejecutar

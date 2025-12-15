@@ -26,6 +26,22 @@ class OrderService(
         orderRepository.findByStatus(status).map { OrderDto.fromEntity(it) }
 
     fun createOrder(dto: OrderCreateDto): OrderDto {
+        var total = 0.0
+        val pendingItems = dto.items.map { itemDto ->
+            val dish = fetchDish(itemDto.dishId)
+                ?: throw IllegalArgumentException("Plato con ID ${itemDto.dishId} no encontrado")
+
+            val subtotal = dish.price * itemDto.quantity
+            total += subtotal
+
+            PendingOrderItem(
+                dishId = dish.id,
+                dishName = dish.name,
+                quantity = itemDto.quantity,
+                subtotal = subtotal
+            )
+        }
+
         val order = Order(
             customerName = dto.customerName,
             customerPhone = dto.customerPhone,
@@ -33,29 +49,23 @@ class OrderService(
             deliveryAddress = dto.deliveryAddress,
             tableNumber = dto.tableNumber,
             notes = dto.notes,
-            total = 0.0,
+            total = total,
             status = OrderStatus.PENDING
         )
 
-        var total = 0.0
-        dto.items.forEach { itemDto ->
-            val dish = fetchDish(itemDto.dishId)
-                ?: throw IllegalArgumentException("Plato con ID ${itemDto.dishId} no encontrado")
-
-            val subtotal = dish.price * itemDto.quantity
-            total += subtotal
-
-            val orderItem = OrderItem(
-                order = order,
-                dishId = dish.id,
-                dishName = dish.name,
-                quantity = itemDto.quantity,
-                subtotal = subtotal
+        pendingItems.forEach { pending ->
+            order.items.add(
+                OrderItem(
+                    order = order,
+                    dishId = pending.dishId,
+                    dishName = pending.dishName,
+                    quantity = pending.quantity,
+                    subtotal = pending.subtotal
+                )
             )
-            order.items.add(orderItem)
         }
 
-        val saved = orderRepository.save(order.copy(total = total))
+        val saved = orderRepository.save(order)
         return OrderDto.fromEntity(saved)
     }
 
@@ -79,4 +89,11 @@ class OrderService(
             "http://localhost:8081/api/dishes/$id",
             DishSummaryDto::class.java
         )
+
+    private data class PendingOrderItem(
+        val dishId: Long,
+        val dishName: String,
+        val quantity: Int,
+        val subtotal: Double
+    )
 }

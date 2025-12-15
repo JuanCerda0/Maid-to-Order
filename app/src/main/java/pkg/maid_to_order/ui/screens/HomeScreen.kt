@@ -58,6 +58,7 @@ import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import pkg.maid_to_order.data.Screen
+import pkg.maid_to_order.data.model.Dish
 import pkg.maid_to_order.ui.screens.SpecialDishCard
 import pkg.maid_to_order.viewmodel.CartViewModel
 import pkg.maid_to_order.viewmodel.MenuViewModel
@@ -78,12 +79,14 @@ fun HomeScreen(
     val weatherState by weatherViewModel.uiState.collectAsState()
 
     val categories = menuViewModel.getCategories()
+    val groupedMenu = menuViewModel.menuList.groupBy { it.category }
     val filteredDishes = if (isSearchActive && searchQuery.isNotEmpty()) {
         menuViewModel.searchDishes(searchQuery)
     } else {
         menuViewModel.getMenuByCategory(selectedCategory)
     }
     val specialDishes = menuViewModel.specialDishes
+    val isGroupedView = !isSearchActive && (selectedCategory == null || selectedCategory == "Todos")
     
     // Animaciones
     val infiniteTransition = rememberInfiniteTransition(label = "infinite")
@@ -268,7 +271,31 @@ fun HomeScreen(
             }
 
             // Lista de platillos
-            if (filteredDishes.isEmpty()) {
+            if (isGroupedView) {
+                if (menuViewModel.menuList.isEmpty()) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(32.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Text(
+                            text = "No hay platillos disponibles",
+                            fontSize = 18.sp,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                        )
+                    }
+                } else {
+                    MenuCategorySections(
+                        modifier = Modifier.weight(1f),
+                        groupedMenu = groupedMenu,
+                        onDishClick = { dish ->
+                            navController.navigate(Screen.DishDetail(dish.id).route)
+                        }
+                    )
+                }
+            } else if (filteredDishes.isEmpty()) {
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
@@ -283,37 +310,113 @@ fun HomeScreen(
                     )
                 }
             } else {
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 12.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    items(
-                        items = filteredDishes,
-                        key = { it.id }
-                    ) { dish ->
-                        AnimatedVisibility(
-                            visible = true,
-                            enter = fadeIn() + slideInVertically(
-                                initialOffsetY = { it / 2 },
-                                animationSpec = spring(
-                                    dampingRatio = Spring.DampingRatioMediumBouncy,
-                                    stiffness = Spring.StiffnessLow
-                                )
-                            ),
-                            exit = fadeOut() + slideOutVertically()
-                        ) {
-                            DishCard(
-                                dish = dish,
-                                onClick = {
-                                    navController.navigate(Screen.DishDetail(dish.id).route)
-                                }
-                            )
-                        }
+                DishListColumn(
+                    modifier = Modifier.weight(1f),
+                    dishes = filteredDishes,
+                    onDishSelected = { dishId ->
+                        navController.navigate(Screen.DishDetail(dishId).route)
                     }
-                }
+                )
             }
+            }
+        }
+    }
+}
+
+@Composable
+private fun MenuCategorySections(
+    modifier: Modifier = Modifier,
+    groupedMenu: Map<String, List<Dish>>,
+    onDishClick: (Dish) -> Unit
+) {
+    val orderedGroups = groupedMenu.entries
+        .filter { it.value.isNotEmpty() }
+        .sortedBy { it.key }
+
+    LazyColumn(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        items(
+            items = orderedGroups,
+            key = { it.key }
+        ) { (category, dishes) ->
+            CategoryCarouselSection(
+                category = category,
+                dishes = dishes,
+                onDishClick = onDishClick
+            )
+        }
+    }
+}
+
+@Composable
+private fun DishListColumn(
+    modifier: Modifier = Modifier,
+    dishes: List<Dish>,
+    onDishSelected: (Int) -> Unit
+) {
+    LazyColumn(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        items(
+            items = dishes,
+            key = { it.id }
+        ) { dish ->
+            AnimatedVisibility(
+                visible = true,
+                enter = fadeIn() + slideInVertically(
+                    initialOffsetY = { it / 2 },
+                    animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioMediumBouncy,
+                        stiffness = Spring.StiffnessLow
+                    )
+                ),
+                exit = fadeOut() + slideOutVertically()
+            ) {
+                DishCard(
+                    dish = dish,
+                    modifier = Modifier.fillMaxWidth(),
+                    onClick = { onDishSelected(dish.id) }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun CategoryCarouselSection(
+    category: String,
+    dishes: List<Dish>,
+    onDishClick: (Dish) -> Unit
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Text(
+            text = category,
+            fontSize = 20.sp,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            items(
+                items = dishes,
+                key = { it.id }
+            ) { dish ->
+                DishCard(
+                    dish = dish,
+                    modifier = Modifier.width(240.dp),
+                    onClick = { onDishClick(dish) }
+                )
             }
         }
     }
@@ -387,7 +490,8 @@ fun WeatherInfoCard(
 
 @Composable
 fun DishCard(
-    dish: pkg.maid_to_order.data.model.Dish,
+    dish: Dish,
+    modifier: Modifier = Modifier.fillMaxWidth(),
     onClick: () -> Unit
 ) {
     var isPressed by remember { mutableStateOf(false) }
@@ -401,8 +505,7 @@ fun DishCard(
     )
     
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
+        modifier = modifier
             .graphicsLayer {
                 scaleX = scale
                 scaleY = scale

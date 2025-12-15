@@ -35,9 +35,9 @@ La app navega mediante `Screen.kt`, cada pantalla (Home, Detalle, Carrito, Formu
 ## Funcionalidades destacadas
 
 ### App Android
-- **Home**: búsqueda por categoría, tarjetas animadas, carrusel de especiales y widget de clima (Open-Meteo).
+- **Home**: búsqueda por categoría, tarjetas animadas, carrusel de especiales y cada categoría del menú se muestra en carruseles horizontales apilados, junto al widget de clima (Open-Meteo).
 - **Detalle**: muestra información completa del plato y permite añadirlo al carrito con animaciones.
-- **Carrito + Formulario**: valida el número de mesa, envía el pedido al backend y guarda el historial en Room.
+- **Carrito + Formulario**: valida el número de mesa, muestra feedback visual durante el envío (spinner/diálogo), envía el pedido al backend y guarda el historial en Room.
 - **Administrador**: CRUD de platos consumiendo directamente los endpoints REST (POST/PUT/DELETE) y usando cámara/galería.
 - **Ajustes/Historial**: cambios de tema vía DataStore y consulta de pedidos guardados localmente.
 
